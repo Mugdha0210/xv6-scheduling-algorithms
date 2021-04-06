@@ -442,3 +442,43 @@ sys_pipe(void)
   fd[1] = fd1;
   return 0;
 }
+
+int
+sys_lseek(void)
+{
+  int fd = -1;
+  int offset = 0;
+  int whence = -1;
+  struct file* f;
+  uint file_size;
+  
+  if((argint(0, &fd) < 0) || (argint(2, &whence) < 0) || (argint(2, &whence) > 2))
+    return -1;
+
+  if(fd >= NOFILE || (f=myproc()->ofile[fd]) == 0)
+    return -1;
+
+  argint(1, &offset);
+
+  if(whence == 0){
+    //SEEK_SET
+    f -> off = offset;
+    return (int)(f -> off);
+  }
+  else if(whence == 1){
+    //SEEK_CUR
+    f -> off += offset;
+    return (int)(f -> off);
+  }
+  else if(whence == 2){
+    //SEEK_END
+    file_size = (f -> ip) -> size;
+    f -> off = file_size + offset;
+    return (int)(f -> off);
+  }
+  else{
+    return -1;
+  }
+  
+  return 0;
+}
