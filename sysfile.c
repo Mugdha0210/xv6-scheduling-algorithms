@@ -463,16 +463,22 @@ sys_lseek(void)
   if(whence == 0){
     //SEEK_SET
     f -> off = offset;
+    if((int)f -> off < 0)
+      return -1;
     return (int)(f -> off);
   }
   else if(whence == 1){
     //SEEK_CUR
     f -> off += offset;
+    if((int)f -> off < 0)
+      return -1;
     return (int)(f -> off);
   }
   else if(whence == 2){
     //SEEK_END
     file_size = (f -> ip) -> size;
+    if((int)f -> off < 0)
+      return -1;
     f -> off = file_size + offset;
     return (int)(f -> off);
   }

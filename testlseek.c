@@ -45,6 +45,9 @@ int main(int argc, char* argv[])
   ret_offset = lseek(fd, 11, SEEK_SET);
   printf(1, "SET Off: 11\t Ret: %d\t Exp: 11\n", ret_offset);
 
+  ret_offset = lseek(fd, -4, SEEK_SET);
+  printf(1, "SET Off: -4\t Ret: %d\t Exp: -1\n", ret_offset);
+
   close(fd);
   exit();
 }
