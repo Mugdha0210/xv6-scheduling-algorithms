@@ -458,6 +458,9 @@ sys_lseek(void)
   if(fd >= NOFILE || (f=myproc()->ofile[fd]) == 0)
     return -1;
 
+  if(f -> type != FD_INODE) 
+    return -1;
+
   argint(1, &offset);
 
   if(whence == 0){
