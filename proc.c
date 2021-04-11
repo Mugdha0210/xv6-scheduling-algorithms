@@ -15,9 +15,11 @@ struct {
 struct proc* q0[64];
 struct proc* q1[64];
 struct proc* q2[64];
-int i = -1;
-int j = -1;
-int k = -1;
+
+//i, j, k = -1 denote empty queue
+int i_start = -1, i_end = -1;
+int j_start = -1, j_end = -1;
+int k_start = -1, k_end = -1;
 
 static struct proc *initproc;
 
@@ -96,8 +98,9 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
   p->priority = 10;
-  q1[c0] = p;
-  c0++;
+  //append process to the second queue by default
+  j++;
+  q1[j] = p;
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -335,29 +338,83 @@ scheduler(void)
   struct cpu *c = mycpu();
   c->proc = 0;
   
+  int d = 0;
   for(;;){
     // Enable interrupts on this processor.
     sti();
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
-        continue;
+    // for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    //   if(p->state != RUNNABLE)
+    //     continue;
 
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
+    //   // Switch to chosen process.  It is the process's job
+    //   // to release ptable.lock and then reacquire it
+    //   // before jumping back to us.
+    //   c->proc = p;
+    //   switchuvm(p);
+    //   p->state = RUNNING;
 
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
+    //   swtch(&(c->scheduler), p->context);
+    //   switchkvm();
 
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      c->proc = 0;
+    //   // Process is done running for now.
+    //   // It should have changed its p->state before coming back.
+    //   c->proc = 0;
+    // }
+    
+    //check if queue is empty
+    if(i != -1){
+      for(d = 0; d <= i; d++){
+        if(q0[d]->state != RUNNABLE)
+          continue;
+        p = q0[d];
+        c->proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
+
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+      }
+    }
+    if(j != -1){
+      for(d = 0; d <= j; d++){
+        if(q1[d]->state != RUNNABLE)
+          continue;
+        p = q1[d];
+        c->proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
+
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+      }
+    }
+    if(k != -1){
+      for(d = 0; d <= k; d++){
+        if(q2[d]->state != RUNNABLE)
+          continue;
+        p = q2[d];
+        c->proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
+
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+      }
     }
     release(&ptable.lock);
 

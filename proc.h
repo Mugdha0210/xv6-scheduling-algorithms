@@ -62,6 +62,6 @@ struct proc {
 extern struct proc* q0[64];
 extern struct proc* q1[64];
 extern struct proc* q2[64];
-extern int c0;
-extern int c1;
-extern int c2;
+extern int i;
+extern int j;
+extern int k;
