@@ -17,9 +17,12 @@ struct proc* q1[64];
 struct proc* q2[64];
 
 //i, j, k = -1 denote empty queue
-int i_start = -1, i_end = -1;
-int j_start = -1, j_end = -1;
-int k_start = -1, k_end = -1;
+// int i_start = -1, i_end = -1;
+// int j_start = -1, j_end = -1;
+// int k_start = -1, k_end = -1;
+int i = -1;
+int j = -1;
+int k = -1;
 
 static struct proc *initproc;
 
@@ -174,6 +177,7 @@ growproc(int n)
   struct proc *curproc = myproc();
 
   sz = curproc->sz;
+  //cprintf("in growproc -- sz is %d\n", sz);
   if(n > 0){
     if((sz = allocuvm(curproc->pgdir, sz, sz + n)) == 0)
       return -1;
