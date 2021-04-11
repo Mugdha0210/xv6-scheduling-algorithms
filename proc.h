@@ -49,6 +49,7 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  int priority;
 };
 
 // Process memory is laid out contiguously, low addresses first:
@@ -56,3 +57,11 @@ struct proc {
 //   original data and bss
 //   fixed-size stack
 //   expandable heap
+
+//3 queues with a maximum of 64 processes each. linked list caused page fault issues, trying queue using an array.
+extern struct proc* q0[64];
+extern struct proc* q1[64];
+extern struct proc* q2[64];
+extern int c0;
+extern int c1;
+extern int c2;

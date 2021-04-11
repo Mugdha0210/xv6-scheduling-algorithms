@@ -12,6 +12,13 @@ struct {
   struct proc proc[NPROC];
 } ptable;
 
+struct proc* q0[64];
+struct proc* q1[64];
+struct proc* q2[64];
+int i = -1;
+int j = -1;
+int k = -1;
+
 static struct proc *initproc;
 
 int nextpid = 1;
@@ -88,7 +95,9 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
-
+  p->priority = 10;
+  q1[c0] = p;
+  c0++;
   release(&ptable.lock);
 
   // Allocate kernel stack.
