@@ -12,17 +12,14 @@ struct {
   struct proc proc[NPROC];
 } ptable;
 
-struct proc* q0[64];
-struct proc* q1[64];
-struct proc* q2[64];
+// struct proc* q0[64];
+// struct proc* q1[64];
+// struct proc* q2[64];
 
-//i, j, k = -1 denote empty queue
-// int i_start = -1, i_end = -1;
-// int j_start = -1, j_end = -1;
-// int k_start = -1, k_end = -1;
-int i = -1;
-int j = -1;
-int k = -1;
+struct queue q1, q2, q3;
+void qinit(struct queue *q);
+void enqueue(struct queue *q, struct proc *p);
+struct proc *dequeue(struct queue *q);
 
 static struct proc *initproc;
 
@@ -31,6 +28,36 @@ extern void forkret(void);
 extern void trapret(void);
 
 static void wakeup1(void *chan);
+
+void qinit(struct queue *q){
+  if(q){
+    q->end = -1;
+    q->start = 0;
+    q->count = 0;
+  }
+  else{
+    panic("queue is null\n");
+  }
+  return;
+}
+
+void enqueue(struct queue *q, struct proc *p){
+  if(q->count == NPROC)
+    panic("Enqueue: Queue full\n");
+  q->end = ((q->end + 1) % NPROC);
+  q->count += 1;
+  q->q[q->end] = p;
+  return;
+}
+
+struct proc *dequeue(struct queue *q){
+  if(q->count == 0)
+    panic("Dequeue: Queue empty\n");
+  struct proc *p = q->q[q->start];
+  q->start = ((q->start + 1) % NPROC);
+  q->count--;
+  return p;
+}
 
 void
 pinit(void)
@@ -102,8 +129,10 @@ found:
   p->pid = nextpid++;
   p->priority = 10;
   //append process to the second queue by default
-  j++;
-  q1[j] = p;
+  // j_end = ((j_end + 1) % NPROC);
+  // q1[j_end] = p;
+  // cprintf("j is %d\t---\tpid %d\n", j, q1[j]->pid);
+  p->queue_number = 2;
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -164,7 +193,11 @@ userinit(void)
   acquire(&ptable.lock);
 
   p->state = RUNNABLE;
-
+  cprintf("qinit  called\n");
+  qinit(&q2);
+  cprintf("userinit: before enqueue\n");
+  enqueue(&q2, p);
+  cprintf("userinit: after enqueue\n");
   release(&ptable.lock);
 }
 
@@ -231,7 +264,7 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
-
+  enqueue(&q2, np);
   release(&ptable.lock);
 
   return pid;
@@ -279,6 +312,10 @@ exit(void)
 
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
+  
+  // if(curproc->queue_number == 2){
+  //   dequeue(&q2);
+  // }
   sched();
   panic("zombie exit");
 }
@@ -311,6 +348,11 @@ wait(void)
         p->name[0] = 0;
         p->killed = 0;
         p->state = UNUSED;
+        // if (p->queue_number == 2)
+        // {
+        //   dequeue(&q2);
+        // }
+        
         release(&ptable.lock);
         return pid;
       }
@@ -342,7 +384,7 @@ scheduler(void)
   struct cpu *c = mycpu();
   c->proc = 0;
   
-  int d = 0;
+  //int d = 0;
   for(;;){
     // Enable interrupts on this processor.
     sti();
@@ -369,57 +411,62 @@ scheduler(void)
     // }
     
     //check if queue is empty
-    if(i != -1){
-      for(d = 0; d <= i; d++){
-        if(q0[d]->state != RUNNABLE)
-          continue;
-        p = q0[d];
-        c->proc = p;
-        switchuvm(p);
-        p->state = RUNNING;
+    // if(c_i == 0){
+    //   for(d = 0; d <= c_i; d++){
+    //     if(q0[d]->state != RUNNABLE)
+    //       continue;
+    //     p = q0[d];
+    //     c->proc = p;
+    //     switchuvm(p);
+    //     p->state = RUNNING;
+    //     if(c_i == 0)
+    //       panic("cannot dequuee empty queue1");
+    //     i_start = ((i_start + 1) % NPROC);
+    //     c_i--;
+    //     swtch(&(c->scheduler), p->context);
+    //     switchkvm();
 
-        swtch(&(c->scheduler), p->context);
-        switchkvm();
+    //     // Process is done running for now.
+    //     // It should have changed its p->state before coming back.
+    //     c->proc = 0;
+    //   }
+    // }
+    if(q2.count != 0){
+    while(q2.count != 0){
+      //cprintf("count : %d\n", q2.count);
+      p = dequeue(&q2);
+      c->proc = p;
+      switchuvm(p);
+      p->state = RUNNING;
+      swtch(&(c->scheduler), p->context);
+      switchkvm();
 
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
-      }
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      c->proc = 0;
     }
-    if(j != -1){
-      for(d = 0; d <= j; d++){
-        if(q1[d]->state != RUNNABLE)
-          continue;
-        p = q1[d];
-        c->proc = p;
-        switchuvm(p);
-        p->state = RUNNING;
+  }
+    
+    // if(c_k == 0){
+    //   for(d = 0; d <= c_k; d++){
+    //     if(q2[d]->state != RUNNABLE)
+    //       continue;
+    //     p = q2[d];
+    //     c->proc = p;
+    //     switchuvm(p);
+    //     p->state = RUNNING;
+    //     if(c_k == 0)
+    //       panic("cannot dequuee empty queue3");
+    //     k_start = ((k_start + 1) % NPROC);
+    //     c_k--;
+    //     swtch(&(c->scheduler), p->context);
+    //     switchkvm();
 
-        swtch(&(c->scheduler), p->context);
-        switchkvm();
-
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
-      }
-    }
-    if(k != -1){
-      for(d = 0; d <= k; d++){
-        if(q2[d]->state != RUNNABLE)
-          continue;
-        p = q2[d];
-        c->proc = p;
-        switchuvm(p);
-        p->state = RUNNING;
-
-        swtch(&(c->scheduler), p->context);
-        switchkvm();
-
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
-      }
-    }
+    //     // Process is done running for now.
+    //     // It should have changed its p->state before coming back.
+    //     c->proc = 0;
+    //   }
+    // }
     release(&ptable.lock);
 
   }
@@ -456,7 +503,9 @@ void
 yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
-  myproc()->state = RUNNABLE;
+  struct proc *p = myproc();
+  p->state = RUNNABLE;
+  enqueue(&q2, p);
   sched();
   release(&ptable.lock);
 }
@@ -508,6 +557,10 @@ sleep(void *chan, struct spinlock *lk)
   // Go to sleep.
   p->chan = chan;
   p->state = SLEEPING;
+//  if(p->queue_number == 2){
+//     dequeue(&q2);
+//   }
+  
 
   sched();
 
@@ -530,8 +583,11 @@ wakeup1(void *chan)
   struct proc *p;
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    if(p->state == SLEEPING && p->chan == chan)
+    if(p->state == SLEEPING && p->chan == chan){
       p->state = RUNNABLE;
+      enqueue(&q2, p);
+    }
+      
 }
 
 // Wake up all processes sleeping on chan.
@@ -556,8 +612,10 @@ kill(int pid)
     if(p->pid == pid){
       p->killed = 1;
       // Wake process from sleep if necessary.
-      if(p->state == SLEEPING)
+      if(p->state == SLEEPING){
         p->state = RUNNABLE;
+        enqueue(&q2, p);
+      }
       release(&ptable.lock);
       return 0;
     }
