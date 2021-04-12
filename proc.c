@@ -411,27 +411,23 @@ scheduler(void)
     // }
     
     //check if queue is empty
-    // if(c_i == 0){
-    //   for(d = 0; d <= c_i; d++){
-    //     if(q0[d]->state != RUNNABLE)
-    //       continue;
-    //     p = q0[d];
-    //     c->proc = p;
-    //     switchuvm(p);
-    //     p->state = RUNNING;
-    //     if(c_i == 0)
-    //       panic("cannot dequuee empty queue1");
-    //     i_start = ((i_start + 1) % NPROC);
-    //     c_i--;
-    //     swtch(&(c->scheduler), p->context);
-    //     switchkvm();
+    while(q1.count != 0){
+      //cprintf("count : %d\n", q2.count);
+      p = dequeue(&q1);
+      if(p->state != RUNNABLE){
+        enqueue(&q1, p);
+        continue;
+      }
+      c->proc = p;
+      switchuvm(p);
+      p->state = RUNNING;
+      swtch(&(c->scheduler), p->context);
+      switchkvm();
 
-    //     // Process is done running for now.
-    //     // It should have changed its p->state before coming back.
-    //     c->proc = 0;
-    //   }
-    // }
-   // if(q2.count != 0){
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      c->proc = 0;
+    }
     while(q2.count != 0){
       //cprintf("count : %d\n", q2.count);
       p = dequeue(&q2);
@@ -449,28 +445,24 @@ scheduler(void)
       // It should have changed its p->state before coming back.
       c->proc = 0;
     }
-  //}
-    
-    // if(c_k == 0){
-    //   for(d = 0; d <= c_k; d++){
-    //     if(q2[d]->state != RUNNABLE)
-    //       continue;
-    //     p = q2[d];
-    //     c->proc = p;
-    //     switchuvm(p);
-    //     p->state = RUNNING;
-    //     if(c_k == 0)
-    //       panic("cannot dequuee empty queue3");
-    //     k_start = ((k_start + 1) % NPROC);
-    //     c_k--;
-    //     swtch(&(c->scheduler), p->context);
-    //     switchkvm();
+    while(q3.count != 0){
+      //cprintf("count : %d\n", q2.count);
+      p = dequeue(&q3);
+      if(p->state != RUNNABLE){
+        enqueue(&q3, p);
+        continue;
+      }
+      c->proc = p;
+      switchuvm(p);
+      p->state = RUNNING;
+      swtch(&(c->scheduler), p->context);
+      switchkvm();
 
-    //     // Process is done running for now.
-    //     // It should have changed its p->state before coming back.
-    //     c->proc = 0;
-    //   }
-    // }
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      c->proc = 0;
+    }
+
     release(&ptable.lock);
 
   }
@@ -663,4 +655,41 @@ procdump(void)
     }
     cprintf("\n");
   }
+}
+
+int ps()
+{
+  struct proc *p;
+  //Enables interrupts on this processor.
+  sti();
+
+  //Loop over process table looking for process with pid.
+  acquire(&ptable.lock);
+  cprintf("name \t pid \t state \t priority \n");
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->state == SLEEPING)
+      cprintf("%s \t %d \t SLEEPING \t %d \n ", p->name, p->pid, p->priority);
+    else if (p->state == RUNNING)
+      cprintf("%s \t %d \t RUNNING \t %d \n ", p->name, p->pid, p->priority);
+    else if (p->state == RUNNABLE)
+      cprintf("%s \t %d \t RUNNABLE \t %d \n ", p->name, p->pid, p->priority);
+  }
+  release(&ptable.lock);
+  return 22;
+}
+int chpriority(int pid, int priority)
+{
+  struct proc *p;
+  acquire(&ptable.lock);
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->pid == pid)
+    {
+      p->priority = priority;
+      break;
+    }
+  }
+  release(&ptable.lock);
+  return pid;
 }

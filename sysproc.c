@@ -89,3 +89,19 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int sys_ps(void)
+{
+  return ps();
+}
+
+int sys_chpriority(void)
+{
+  int pid, pr;
+  if (argint(0, &pid) < 0)
+    return -1;
+  if (argint(1, &pr) < 0)
+    return -1;
+
+  return chpriority(pid, pr);
+}
