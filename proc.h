@@ -65,4 +65,9 @@ struct queue{
   int start;
   int end;
   int count;
+  int time;
 };
+
+#define TIME_Q1 100000000
+#define TIME_Q2 50000000
+#define TIME_Q3 10000000

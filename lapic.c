@@ -49,6 +49,8 @@ lapicw(int index, int value)
 {
   lapic[index] = value;
   lapic[ID];  // wait for write to finish, by reading
+  if(index == TICR)
+    cprintf("index %d  -------- value %d\n", index, lapic[index]);
 }
 
 void
@@ -226,4 +228,8 @@ cmostime(struct rtcdate *r)
 
   *r = t1;
   r->year += 2000;
+}
+
+void modify_TICR(int a){
+  lapicw(TICR, a);
 }

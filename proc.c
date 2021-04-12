@@ -6,6 +6,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "date.h"
 
 struct {
   struct spinlock lock;
@@ -17,7 +18,7 @@ struct {
 // struct proc* q2[64];
 
 struct queue q1, q2, q3;
-void qinit(struct queue *q);
+void qinit(struct queue *q, int t);
 void enqueue(struct queue *q, struct proc *p);
 struct proc *dequeue(struct queue *q);
 
@@ -29,11 +30,12 @@ extern void trapret(void);
 
 static void wakeup1(void *chan);
 
-void qinit(struct queue *q){
+void qinit(struct queue *q, int t){
   if(q){
     q->end = -1;
     q->start = 0;
     q->count = 0;
+    q->time = t;
   }
   else{
     panic("queue is null\n");
@@ -194,10 +196,12 @@ userinit(void)
 
   p->state = RUNNABLE;
   cprintf("qinit  called\n");
-  qinit(&q2);
-  cprintf("userinit: before enqueue\n");
+  qinit(&q1, TIME_Q1);
+  qinit(&q2, TIME_Q2);
+  qinit(&q3, TIME_Q3);
+  //cprintf("userinit: before enqueue\n");
   enqueue(&q2, p);
-  cprintf("userinit: after enqueue\n");
+  //cprintf("userinit: after enqueue\n");
   release(&ptable.lock);
 }
 
@@ -383,8 +387,7 @@ scheduler(void)
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
-  
-  //int d = 0;
+
   for(;;){
     // Enable interrupts on this processor.
     sti();
@@ -421,6 +424,8 @@ scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+      // startTicks = uptime();
+      modify_TICR(q1.time);
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -438,6 +443,8 @@ scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+      modify_TICR(q2.time);
+      
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -455,6 +462,8 @@ scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+      modify_TICR(q3.time);
+      // p->stime
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
