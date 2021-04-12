@@ -431,10 +431,14 @@ scheduler(void)
     //     c->proc = 0;
     //   }
     // }
-    if(q2.count != 0){
+   // if(q2.count != 0){
     while(q2.count != 0){
       //cprintf("count : %d\n", q2.count);
       p = dequeue(&q2);
+      if(p->state != RUNNABLE){
+        enqueue(&q2, p);
+        continue;
+      }
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
@@ -445,7 +449,7 @@ scheduler(void)
       // It should have changed its p->state before coming back.
       c->proc = 0;
     }
-  }
+  //}
     
     // if(c_k == 0){
     //   for(d = 0; d <= c_k; d++){
