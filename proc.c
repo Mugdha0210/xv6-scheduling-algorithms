@@ -116,7 +116,6 @@ allocproc(void)
 {
   struct proc *p;
   char *sp;
-
   acquire(&ptable.lock);
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
@@ -128,13 +127,13 @@ allocproc(void)
 
 found:
   p->state = EMBRYO;
-  p->pid = nextpid++;
-  p->priority = 10;
-  //append process to the second queue by default
-  // j_end = ((j_end + 1) % NPROC);
-  // q1[j_end] = p;
-  // cprintf("j is %d\t---\tpid %d\n", j, q1[j]->pid);
-  p->queue_number = 2;
+  p->pid = nextpid;
+  p->first = 1;
+  if(p->pid == 1 || p->pid == 2)
+    p->priority = 1;  
+  else
+    p->priority = ((p->pid) % 3) * 7 + 3;
+  nextpid++;
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -200,7 +199,7 @@ userinit(void)
   qinit(&q2, TIME_Q2);
   qinit(&q3, TIME_Q3);
   //cprintf("userinit: before enqueue\n");
-  enqueue(&q2, p);
+  enqueue(&q1, p);
   //cprintf("userinit: after enqueue\n");
   release(&ptable.lock);
 }
@@ -268,7 +267,12 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
-  enqueue(&q2, np);
+  if((np->priority) >= 0 && (np->priority) <= 6)
+    enqueue(&q1, np);
+  else if((np->priority) >= 7 && (np->priority) <= 13)
+    enqueue(&q2, np);
+  else if((np->priority) >= 14 && (np->priority) <= 20)
+    enqueue(&q3, np);
   release(&ptable.lock);
 
   return pid;
@@ -280,7 +284,9 @@ fork(void)
 void
 exit(void)
 {
+  
   struct proc *curproc = myproc();
+  cprintf("PID: %d\tNAME: %s\tPRIORITY: %d\tend ticks: %d\n", curproc->pid, curproc->name, curproc->priority, ticks);
   struct proc *p;
   int fd;
 
@@ -394,25 +400,7 @@ scheduler(void)
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-    // for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    //   if(p->state != RUNNABLE)
-    //     continue;
 
-    //   // Switch to chosen process.  It is the process's job
-    //   // to release ptable.lock and then reacquire it
-    //   // before jumping back to us.
-    //   c->proc = p;
-    //   switchuvm(p);
-    //   p->state = RUNNING;
-
-    //   swtch(&(c->scheduler), p->context);
-    //   switchkvm();
-
-    //   // Process is done running for now.
-    //   // It should have changed its p->state before coming back.
-    //   c->proc = 0;
-    // }
-    
     //check if queue is empty
     while(q1.count != 0){
       //cprintf("count : %d\n", q2.count);
@@ -426,6 +414,13 @@ scheduler(void)
       p->state = RUNNING;
       // startTicks = uptime();
       modify_TICR(q1.time);
+      //cprintf("Q1: will run PID %d \t PRIORITY %d \t NAME %s for TICR %d\n", p->pid, p->priority, p->name, q1.time);
+      if(p->first){
+          p->start_ticks = ticks;
+          p->first =  0;
+         cprintf("PID: %d\tNAME: %s\tPRIORITY: %d\tstart ticks: %d\n", p->pid, p->name, p->priority, p->start_ticks);
+        } 
+         
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -444,7 +439,12 @@ scheduler(void)
       switchuvm(p);
       p->state = RUNNING;
       modify_TICR(q2.time);
-      
+      // cprintf("Q2: will run PID %d \t PRIORITY %d \t NAME %s for TICR %d\n", p->pid, p->priority, p->name, q2.time);
+      if(p->first){
+          p->start_ticks = ticks;
+          p->first =  0;
+          cprintf("PID: %d\tNAME: %s\tPRIORITY: %d\tstart ticks: %d\n", p->pid, p->name, p->priority, p->start_ticks);
+        } 
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -463,7 +463,12 @@ scheduler(void)
       switchuvm(p);
       p->state = RUNNING;
       modify_TICR(q3.time);
-      // p->stime
+      //cprintf("Q3: will run PID %d \t PRIORITY %d \t NAME %s for TICR %d\n", p->pid, p->priority, p->name, q3.time);
+      if(p->first){
+        p->start_ticks = ticks;
+        p->first =  0;
+        cprintf("PID: %d\tNAME: %s\tPRIORITY: %d\tstart ticks: %d\n", p->pid, p->name, p->priority, p->start_ticks);
+      } 
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -510,7 +515,12 @@ yield(void)
   acquire(&ptable.lock);  //DOC: yieldlock
   struct proc *p = myproc();
   p->state = RUNNABLE;
-  enqueue(&q2, p);
+  if((p->priority) >= 0 && (p->priority) <= 6)
+    enqueue(&q1, p);
+  else if((p->priority) >= 7 && (p->priority) <= 13)
+    enqueue(&q2, p);
+  else if((p->priority) >= 14 && (p->priority) <= 20)
+    enqueue(&q3, p);
   sched();
   release(&ptable.lock);
 }
@@ -590,7 +600,12 @@ wakeup1(void *chan)
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == SLEEPING && p->chan == chan){
       p->state = RUNNABLE;
-      enqueue(&q2, p);
+      if((p->priority) >= 0 && (p->priority) <= 6)
+        enqueue(&q1, p);
+      else if((p->priority) >= 7 && (p->priority) <= 13)
+        enqueue(&q2, p);
+      else if((p->priority) >= 14 && (p->priority) <= 20)
+        enqueue(&q3, p);
     }
       
 }
@@ -619,7 +634,12 @@ kill(int pid)
       // Wake process from sleep if necessary.
       if(p->state == SLEEPING){
         p->state = RUNNABLE;
-        enqueue(&q2, p);
+        if((p->priority) >= 0 && (p->priority) <= 6)
+          enqueue(&q1, p);
+        if((p->priority) >= 7 && (p->priority) <= 13)
+          enqueue(&q2, p);
+        else if((p->priority) >= 14 && (p->priority) <= 20)
+          enqueue(&q3, p);
       }
       release(&ptable.lock);
       return 0;

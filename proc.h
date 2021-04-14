@@ -50,7 +50,9 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   int priority;                // priority of the process
-  int queue_number;            // can take value 0,1,2, default value 2
+  int start_ticks;
+  int end_ticks;
+  int first;
 };
 
 // Process memory is laid out contiguously, low addresses first:
@@ -68,6 +70,6 @@ struct queue{
   int time;
 };
 
-#define TIME_Q1 100000000
-#define TIME_Q2 50000000
-#define TIME_Q3 10000000
+#define TIME_Q1 100000
+#define TIME_Q2 50000
+#define TIME_Q3 10000
