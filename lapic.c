@@ -50,7 +50,7 @@ lapicw(int index, int value)
   lapic[index] = value;
   lapic[ID]; // wait for write to finish, by reading
   // if (index == TICR)
-  // cprintf("index %d  -------- value %d\n", index, lapic[index]);
+  //   cprintf("index %d  -------- value %d\n", index, lapic[index]);
 }
 
 void lapicinit(void)

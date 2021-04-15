@@ -133,6 +133,9 @@ found:
     p->priority = 1;  
   else
     p->priority = ((p->pid) % 3) * 7 + 3;
+    // p->priority = 17;
+  p->start_ticks = ticks;
+  cprintf("PID: %d\tNAME: %s\tPRIORITY: %d\tstart ticks: %d\n", p->pid, p->name, p->priority, p->start_ticks);
   nextpid++;
   release(&ptable.lock);
 
@@ -405,6 +408,7 @@ scheduler(void)
     while(q1.count != 0){
       //cprintf("count : %d\n", q2.count);
       p = dequeue(&q1);
+      
       if(p->state != RUNNABLE){
         enqueue(&q1, p);
         continue;
@@ -416,9 +420,9 @@ scheduler(void)
       modify_TICR(q1.time);
       //cprintf("Q1: will run PID %d \t PRIORITY %d \t NAME %s for TICR %d\n", p->pid, p->priority, p->name, q1.time);
       if(p->first){
-          p->start_ticks = ticks;
+          p->run_ticks = ticks;
           p->first =  0;
-         cprintf("PID: %d\tNAME: %s\tPRIORITY: %d\tstart ticks: %d\n", p->pid, p->name, p->priority, p->start_ticks);
+         cprintf("PID: %d\tNAME: %s\tPRIORITY: %d\trun ticks: %d\n", p->pid, p->name, p->priority, p->run_ticks);
         } 
          
       swtch(&(c->scheduler), p->context);
@@ -426,6 +430,8 @@ scheduler(void)
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
+      // if(p->run_ticks != 0 && p->priority != 1)
+      //   cprintf("In scheduler q1, PID: %d\tNAME: %s\tticks : %d\n", p->pid, p->name, p->run_ticks);
       c->proc = 0;
     }
     while(q2.count != 0){
@@ -440,16 +446,18 @@ scheduler(void)
       p->state = RUNNING;
       modify_TICR(q2.time);
       // cprintf("Q2: will run PID %d \t PRIORITY %d \t NAME %s for TICR %d\n", p->pid, p->priority, p->name, q2.time);
-      if(p->first){
-          p->start_ticks = ticks;
+       if(p->first){
+          p->run_ticks = ticks;
           p->first =  0;
-          cprintf("PID: %d\tNAME: %s\tPRIORITY: %d\tstart ticks: %d\n", p->pid, p->name, p->priority, p->start_ticks);
-        } 
+         cprintf("PID: %d\tNAME: %s\tPRIORITY: %d\trun ticks: %d\n", p->pid, p->name, p->priority, p->run_ticks);
+        }  
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
+      // if(p->run_ticks != 0 && p->priority != 1)
+      //   cprintf("In scheduler q2, PID: %d\tNAME: %s\tticks : %d\n", p->pid, p->name, p->run_ticks);
       c->proc = 0;
     }
     while(q3.count != 0){
@@ -464,16 +472,18 @@ scheduler(void)
       p->state = RUNNING;
       modify_TICR(q3.time);
       //cprintf("Q3: will run PID %d \t PRIORITY %d \t NAME %s for TICR %d\n", p->pid, p->priority, p->name, q3.time);
-      if(p->first){
-        p->start_ticks = ticks;
-        p->first =  0;
-        cprintf("PID: %d\tNAME: %s\tPRIORITY: %d\tstart ticks: %d\n", p->pid, p->name, p->priority, p->start_ticks);
-      } 
+       if(p->first){
+          p->run_ticks = ticks;
+          p->first =  0;
+         cprintf("PID: %d\tNAME: %s\tPRIORITY: %d\trun ticks: %d\n", p->pid, p->name, p->priority, p->run_ticks);
+        } 
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
+      // if(p->run_ticks != 0 && p->priority != 1)
+      //   cprintf("In scheduler q3, PID: %d\tNAME: %s\tticks : %d\n", p->pid, p->name, p->run_ticks);
       c->proc = 0;
     }
 
@@ -504,6 +514,8 @@ sched(void)
   if(readeflags()&FL_IF)
     panic("sched interruptible");
   intena = mycpu()->intena;
+  //if(p->run_ticks != 0 && p->priority != 1)
+  //  cprintf("In sched, PID: %d\tNAME: %s\tticks : %d\n", p->pid, p->name, p->run_ticks);
   swtch(&p->context, mycpu()->scheduler);
   mycpu()->intena = intena;
 }
@@ -515,6 +527,8 @@ yield(void)
   acquire(&ptable.lock);  //DOC: yieldlock
   struct proc *p = myproc();
   p->state = RUNNABLE;
+  //if(p->run_ticks != 0 && p->priority != 1)
+   // cprintf("In yield, PID: %d\tNAME: %s\tticks : %d\n", p->pid, p->name, p->run_ticks);
   if((p->priority) >= 0 && (p->priority) <= 6)
     enqueue(&q1, p);
   else if((p->priority) >= 7 && (p->priority) <= 13)

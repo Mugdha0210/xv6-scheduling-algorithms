@@ -51,6 +51,7 @@ struct proc {
   char name[16];               // Process name (debugging)
   int priority;                // priority of the process
   int start_ticks;
+  int run_ticks;
   int end_ticks;
   int first;
 };
@@ -70,6 +71,6 @@ struct queue{
   int time;
 };
 
-#define TIME_Q1 100000
-#define TIME_Q2 50000
-#define TIME_Q3 10000
+#define TIME_Q1 1000000
+#define TIME_Q2 500000
+#define TIME_Q3 100000
