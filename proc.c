@@ -602,7 +602,7 @@ int chpriority(int pid, int priority)
   return pid;
 }
 
-void time(int pid)
+int time(int pid)
 {
   struct proc *p;
   int flag = 0;
@@ -622,5 +622,5 @@ void time(int pid)
   if (flag == 0)
     cprintf("No process with PID %d\n", pid);
 
-  return;
+  return 24;
 }

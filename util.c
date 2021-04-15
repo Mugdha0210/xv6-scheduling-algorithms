@@ -2,12 +2,11 @@
 #include "stat.h"
 #include "user.h"
 
-int i = 0;
-
 int main(int argc, char *argv[])
 {
   int pid;
   int ppid = 1; 	//parent is init if failure
+  int i;
 
   pid = fork();
   if (pid < 0)
@@ -23,12 +22,12 @@ int main(int argc, char *argv[])
   else
   {
     printf(1, "Child %d created\n", getpid());
-    while(i < 1000000){
-      //printf(1, "Child: %d, ", i);
-      i += 1;
+    for(i=0; i < 1000000; i++){
+      printf(1, "Child: %d, ", i);
     }
     //printf(1, "\n");
   }
+  printf(1, "i: %d, ", i);
 
   printf(1, "Parent: ");
   time(ppid);
