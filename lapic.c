@@ -10,6 +10,8 @@
 #include "mmu.h"
 #include "x86.h"
 
+#define MAX_SLICE 0xffffffff
+
 // Local APIC registers, divided by 4 for use as uint[] indices.
 #define ID      (0x0020/4)   // ID
 #define VER     (0x0030/4)   // Version

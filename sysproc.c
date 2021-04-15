@@ -89,3 +89,35 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+/*
+Ref:
+https://medium.com/@harshalshree03/xv6-implementing-ps-nice-system-calls-and-priority-scheduling-b12fa10494e4
+*/
+int sys_ps(void)
+{
+  return ps();
+}
+
+/*
+Ref:
+https://medium.com/@harshalshree03/xv6-implementing-ps-nice-system-calls-and-priority-scheduling-b12fa10494e4
+*/
+int sys_chpriority(void)
+{
+  int pid, pr;
+  if (argint(0, &pid) < 0)
+    return -1;
+  if (argint(1, &pr) < 0)
+    return -1;
+
+  return chpriority(pid, pr);
+}
+
+int sys_time(void)
+{
+  int pid;
+  if (argint(0, &pid) < 0)
+    return -1;
+  return time(pid);
+}

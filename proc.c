@@ -88,6 +88,7 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->priority = 10;
 
   release(&ptable.lock);
 
@@ -111,6 +112,9 @@ found:
   p->context = (struct context*)sp;
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
+
+  p->creat_time = ticks;
+  p->exit_time = 0;
 
   return p;
 }
@@ -263,6 +267,9 @@ exit(void)
 
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
+  curproc->exit_time = ticks;
+  //cprintf("------ %d -- Created: %d -- Exited: %d ------\n", curproc->pid, curproc->creat_time, curproc->exit_time); 
+
   sched();
   panic("zombie exit");
 }
@@ -322,13 +329,14 @@ wait(void)
 void
 scheduler(void)
 {
-  struct proc *p;
+  struct proc *p, *p1;
   struct cpu *c = mycpu();
   c->proc = 0;
   
   for(;;){
     // Enable interrupts on this processor.
     sti();
+    struct proc *highP;
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
@@ -339,6 +347,15 @@ scheduler(void)
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
+      highP = p;
+      // Choose one with highest priority.
+      for (p1 = ptable.proc; p1 < &ptable.proc[NPROC]; p1++){
+        if (p1->state != RUNNABLE)
+          continue;
+        if (highP->priority > p1->priority) //larger value, lower priority
+          highP = p1;
+      }
+      p = highP;
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
@@ -531,4 +548,79 @@ procdump(void)
     }
     cprintf("\n");
   }
+}
+
+/*
+Ref:
+https://medium.com/@harshalshree03/xv6-implementing-ps-nice-system-calls-and-priority-scheduling-b12fa10494e4
+*/
+int ps()
+{
+  struct proc *p;
+  //Enables interrupts on this processor.
+  sti();
+
+  //Loop over process table looking for process with pid.
+  acquire(&ptable.lock);
+  cprintf("name \t pid \t state \t priority \n");
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if (p->state == SLEEPING)
+      cprintf("%s \t %d \t SLEEPING \t %d \n ", p->name, p->pid, p->priority);
+    else if (p->state == RUNNING)
+      cprintf("%s \t %d \t RUNNING \t %d \n ", p->name, p->pid, p->priority);
+    else if (p->state == RUNNABLE)
+      cprintf("%s \t %d \t RUNNABLE \t %d \n ", p->name, p->pid, p->priority);
+  }
+  release(&ptable.lock);
+  return 22;
+}
+
+/*
+Ref:
+https://medium.com/@harshalshree03/xv6-implementing-ps-nice-system-calls-and-priority-scheduling-b12fa10494e4
+*/
+int chpriority(int pid, int priority)
+{
+  struct proc *p;
+  int flag = 0;
+  //Enables interrupts on this processor.
+  sti();
+
+  acquire(&ptable.lock);
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if (p->pid == pid){
+      p->priority = priority;
+      flag = 1;
+      break;
+    }
+  }
+  release(&ptable.lock);
+
+  if (flag == 0)
+    cprintf("No process with PID %d\n", pid);
+
+  return pid;
+}
+
+void time(int pid)
+{
+  struct proc *p;
+  int flag = 0;
+  //Enables interrupts on this processor.
+  sti();
+
+  acquire(&ptable.lock);
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if (p->pid == pid){
+      cprintf("PID: %d -- Created: %d -- Exited: %d\n", pid, p->creat_time, p->exit_time);
+      flag = 1;
+      break;
+    }
+  }
+  release(&ptable.lock);
+
+  if (flag == 0)
+    cprintf("No process with PID %d\n", pid);
+
+  return;
 }
