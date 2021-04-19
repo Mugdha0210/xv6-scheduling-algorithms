@@ -6,60 +6,62 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
-#include "date.h"
 
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
 } ptable;
 
-// struct proc* q0[64];
-// struct proc* q1[64];
-// struct proc* q2[64];
+int s1 = 0, e1 = 20, c1 = 0, s2 = 21, e2 = 41, c2 = 0, s3 = 42, e3 = 63, c3 = 0;
 
-struct queue q1, q2, q3;
-void qinit(struct queue *q, int t);
-void enqueue(struct queue *q, struct proc *p);
-struct proc *dequeue(struct queue *q);
+// struct queue q1, q2, q3;
+// void qinit(struct queue *q, int base);
+// void enqueue(struct queue *q, struct proc *p);
+// struct proc *dequeue(struct queue *q);
+// struct proc *get_next_process(int q);
 
 static struct proc *initproc;
-
+int yieldcount = 0;
 int nextpid = 1;
 extern void forkret(void);
 extern void trapret(void);
 
 static void wakeup1(void *chan);
 
-void qinit(struct queue *q, int t){
-  if(q){
-    q->end = -1;
-    q->start = 0;
-    q->count = 0;
-    q->time = t;
-  }
-  else{
-    panic("queue is null\n");
-  }
-  return;
-}
+// void qinit(struct queue *q, int base){
+//   if(q){
+//     q->end = -1;
+//     q->start = 0;
+//     q->count = 0;
+//   }
+//   else{
+//     panic("queue is null\n");
+//   }
+//   return;
+// }
 
-void enqueue(struct queue *q, struct proc *p){
-  if(q->count == NPROC)
-    panic("Enqueue: Queue full\n");
-  q->end = ((q->end + 1) % NPROC);
-  q->count += 1;
-  q->q[q->end] = p;
-  return;
-}
+// void enqueue(struct queue *q, struct proc *p){
+//   if(q->count == NPROC)
+//     panic("Enqueue: Queue full\n");
+//   q->end = ((q->end + 1) % NPROC);
+//   q->count += 1;
+//   q->q[q->end] = p;
+//   return;
+// }
 
-struct proc *dequeue(struct queue *q){
-  if(q->count == 0)
-    panic("Dequeue: Queue empty\n");
-  struct proc *p = q->q[q->start];
-  q->start = ((q->start + 1) % NPROC);
-  q->count--;
-  return p;
-}
+// struct proc *dequeue(struct queue *q){
+//   if(q->count == 0)
+//     panic("Dequeue: Queue empty\n");
+//   struct proc *p = q->q[q->start];
+//   if(p->pid == 1){
+//     q->start = 2;
+//   }
+//   else{
+//     q->start = ((q->start + 1) % NPROC);
+//   }  
+//   q->count--;
+//   return p;
+// }
 
 void
 pinit(void)
@@ -115,28 +117,32 @@ static struct proc*
 allocproc(void)
 {
   struct proc *p;
+  int i = 0;
   char *sp;
   acquire(&ptable.lock);
 
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->state == UNUSED)
       goto found;
+    i++;
+  }
 
   release(&ptable.lock);
   return 0;
 
 found:
   p->state = EMBRYO;
-  p->pid = nextpid;
+  p->pid = nextpid++;
   p->first = 1;
-  if(p->pid == 1 || p->pid == 2)
-    p->priority = 1;  
-  else
-    p->priority = ((p->pid) % 3) * 7 + 3;
-    // p->priority = 17;
-  p->start_ticks = ticks;
-  cprintf("PID: %d\tNAME: %s\tPRIORITY: %d\tstart ticks: %d\n", p->pid, p->name, p->priority, p->start_ticks);
-  nextpid++;
+  if(i >= 0 && i <= 20){
+    p->queue_no = 1;
+  }
+  else if(i >= 21 && i <= 41){
+    p->queue_no = 2;
+  }
+  else if(i >= 42 && i <= 63){
+    p->queue_no = 3;
+  }
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -168,6 +174,7 @@ found:
 void
 userinit(void)
 {
+  cprintf("in userinit\n");
   struct proc *p;
   extern char _binary_initcode_start[], _binary_initcode_size[];
 
@@ -198,12 +205,7 @@ userinit(void)
 
   p->state = RUNNABLE;
   cprintf("qinit  called\n");
-  qinit(&q1, TIME_Q1);
-  qinit(&q2, TIME_Q2);
-  qinit(&q3, TIME_Q3);
-  //cprintf("userinit: before enqueue\n");
-  enqueue(&q1, p);
-  //cprintf("userinit: after enqueue\n");
+  
   release(&ptable.lock);
 }
 
@@ -266,16 +268,17 @@ fork(void)
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
 
   pid = np->pid;
-
+  
   acquire(&ptable.lock);
-
+  if(pid == 1 || pid == 2){
+    np->queue_no = 1;
+  }
+  else{
+    np->queue_no = (pid % 3) + 1;
+  }
   np->state = RUNNABLE;
-  if((np->priority) >= 0 && (np->priority) <= 6)
-    enqueue(&q1, np);
-  else if((np->priority) >= 7 && (np->priority) <= 13)
-    enqueue(&q2, np);
-  else if((np->priority) >= 14 && (np->priority) <= 20)
-    enqueue(&q3, np);
+  np->start_ticks = ticks;
+  cprintf("PID: %d\tNAME: %s\tQUEUE: %d\tstart ticks: %d\n", np->pid, np->name, np->queue_no, np->start_ticks);
   release(&ptable.lock);
 
   return pid;
@@ -289,7 +292,7 @@ exit(void)
 {
   
   struct proc *curproc = myproc();
-  cprintf("PID: %d\tNAME: %s\tPRIORITY: %d\tend ticks: %d\n", curproc->pid, curproc->name, curproc->priority, ticks);
+  cprintf("PID: %d\tNAME: %s\tQUEUE: %d\tend ticks: %d\n", curproc->pid, curproc->name, curproc->queue_no, ticks);
   struct proc *p;
   int fd;
 
@@ -325,10 +328,23 @@ exit(void)
 
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
-  
+  cprintf("yieldcount = %d\n", yieldcount);
+  cprintf("lapsed ticks = %d\n", ticks - curproc->start_ticks);
   // if(curproc->queue_number == 2){
   //   dequeue(&q2);
   // }
+  // if(curproc->queue_no == 1)
+  //   {cprintf("3 processes in q1 are: %s,\t%s\t%s\n", q1.q[q1.start]->name, q1.q[q1.start + 1]->name, q1.q[q1.start + 2]->name);dequeue(&q1);
+  //   cprintf("dequeued %s, q1.count is %d\n", curproc->name, q1.count);
+  //   cprintf("2 processes in q1 are: %s,\t%s\n", q1.q[q1.start-1]->name, q1.q[q1.start - 2]->name);}
+  // else if(curproc->queue_no == 2)
+  //   {dequeue(&q2);
+  //    cprintf("dequeued %s, q2.count is %d\n", curproc->name, q2.count);}
+  // else if(curproc->queue_no == 3)
+  //   {dequeue(&q3);
+  //  cprintf("dequeued %s, q3.count is %d\n", curproc->name, q3.count); }
+  
+  // cprintf("calling sched from exit\n");
   sched();
   panic("zombie exit");
 }
@@ -378,10 +394,57 @@ wait(void)
     }
 
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
+    // cprintf("%s on cpu, state is %d calling sleep in wait\n", curproc->name, curproc->state);
     sleep(curproc, &ptable.lock);  //DOC: wait-sleep
   }
 }
 
+// struct proc *get_next_process(int q){
+//   // cprintf("In func\n");
+//   int i = 0;
+  
+//   switch(q){
+//     case 1:
+//     while(i < q1.count){
+//       // cprintf("in q1: i = %d\t", i);
+//       i = (i + q1.start) % NPROC;
+//       if(q1.q[i]->state != RUNNABLE){
+//        i = (i + 1) % NPROC;
+//       }
+//       else {
+//         return q1.q[i]; 
+//       }
+//     }
+//     break;
+//     case 2:
+//     while(i < q2.count){
+//       // cprintf("in q2: i = %d\t", i);
+//       i = (i + q2.start) % NPROC;
+//       if(q2.q[i]->state != RUNNABLE){
+//        i = (i + 1) % NPROC;
+//       }
+//       else 
+//         return q2.q[i];
+//     }
+//     break;
+//     case 3:
+//     while(i < q3.count){
+//       // cprintf("in q3: i = %d\t", i);
+//       i = (i + q3.start) % NPROC;
+//       if(q3.q[i]->state != RUNNABLE){
+//        i = (i + 1) % NPROC;
+//       }
+//       else 
+//         return q3.q[i];
+//     }
+//     break;
+//     default:
+//     cprintf("in default");
+//       return 0;
+//       break;
+//   }
+//   return 0;
+// }
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
@@ -394,99 +457,56 @@ void
 scheduler(void)
 {
   struct proc *p;
+  int i = 0, flag = 0;
   struct cpu *c = mycpu();
   c->proc = 0;
-
+  // int q = 30;
   for(;;){
     // Enable interrupts on this processor.
     sti();
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-
-    //check if queue is empty
-    while(q1.count != 0){
-      //cprintf("count : %d\n", q2.count);
-      p = dequeue(&q1);
-      
-      if(p->state != RUNNABLE){
-        enqueue(&q1, p);
-        continue;
+    flag = 0;
+    for(i = 1; i < 4; i++){
+      if(i == 1){
+        modify_TICR(TIME_Q1);
       }
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
-      // startTicks = uptime();
-      modify_TICR(q1.time);
-      //cprintf("Q1: will run PID %d \t PRIORITY %d \t NAME %s for TICR %d\n", p->pid, p->priority, p->name, q1.time);
-      if(p->first){
-          p->run_ticks = ticks;
-          p->first =  0;
-         cprintf("PID: %d\tNAME: %s\tPRIORITY: %d\trun ticks: %d\n", p->pid, p->name, p->priority, p->run_ticks);
-        } 
-         
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
-
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      // if(p->run_ticks != 0 && p->priority != 1)
-      //   cprintf("In scheduler q1, PID: %d\tNAME: %s\tticks : %d\n", p->pid, p->name, p->run_ticks);
-      c->proc = 0;
-    }
-    while(q2.count != 0){
-      //cprintf("count : %d\n", q2.count);
-      p = dequeue(&q2);
-      if(p->state != RUNNABLE){
-        enqueue(&q2, p);
-        continue;
+      else if(i == 2){
+        modify_TICR(TIME_Q2);
       }
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
-      modify_TICR(q2.time);
-      // cprintf("Q2: will run PID %d \t PRIORITY %d \t NAME %s for TICR %d\n", p->pid, p->priority, p->name, q2.time);
-       if(p->first){
-          p->run_ticks = ticks;
-          p->first =  0;
-         cprintf("PID: %d\tNAME: %s\tPRIORITY: %d\trun ticks: %d\n", p->pid, p->name, p->priority, p->run_ticks);
-        }  
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
-
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      // if(p->run_ticks != 0 && p->priority != 1)
-      //   cprintf("In scheduler q2, PID: %d\tNAME: %s\tticks : %d\n", p->pid, p->name, p->run_ticks);
-      c->proc = 0;
-    }
-    while(q3.count != 0){
-      //cprintf("count : %d\n", q2.count);
-      p = dequeue(&q3);
-      if(p->state != RUNNABLE){
-        enqueue(&q3, p);
-        continue;
+      else if(i == 3){
+        modify_TICR(TIME_Q3);
       }
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
-      modify_TICR(q3.time);
-      //cprintf("Q3: will run PID %d \t PRIORITY %d \t NAME %s for TICR %d\n", p->pid, p->priority, p->name, q3.time);
-       if(p->first){
-          p->run_ticks = ticks;
-          p->first =  0;
-         cprintf("PID: %d\tNAME: %s\tPRIORITY: %d\trun ticks: %d\n", p->pid, p->name, p->priority, p->run_ticks);
-        } 
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
+      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+        if(p->queue_no != i)
+          continue;
+        if(p->state == RUNNING){
+          flag = 1;
+          break;
+        }
+        if(p->state != RUNNABLE)
+          continue;
 
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      // if(p->run_ticks != 0 && p->priority != 1)
-      //   cprintf("In scheduler q3, PID: %d\tNAME: %s\tticks : %d\n", p->pid, p->name, p->run_ticks);
-      c->proc = 0;
+        // Switch to chosen process.  It is the process's job
+        // to release ptable.lock and then reacquire it
+        // before jumping back to us.
+        c->proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
+
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+      }
+      if(flag == 1){
+        break;
+      }
     }
-
+    
     release(&ptable.lock);
 
   }
@@ -503,8 +523,9 @@ void
 sched(void)
 {
   int intena;
+  // cprintf("in sched: ");
   struct proc *p = myproc();
-
+  // cprintf("%s\n", p->name);
   if(!holding(&ptable.lock))
     panic("sched ptable.lock");
   if(mycpu()->ncli != 1)
@@ -514,8 +535,6 @@ sched(void)
   if(readeflags()&FL_IF)
     panic("sched interruptible");
   intena = mycpu()->intena;
-  //if(p->run_ticks != 0 && p->priority != 1)
-  //  cprintf("In sched, PID: %d\tNAME: %s\tticks : %d\n", p->pid, p->name, p->run_ticks);
   swtch(&p->context, mycpu()->scheduler);
   mycpu()->intena = intena;
 }
@@ -527,15 +546,13 @@ yield(void)
   acquire(&ptable.lock);  //DOC: yieldlock
   struct proc *p = myproc();
   p->state = RUNNABLE;
-  //if(p->run_ticks != 0 && p->priority != 1)
-   // cprintf("In yield, PID: %d\tNAME: %s\tticks : %d\n", p->pid, p->name, p->run_ticks);
-  if((p->priority) >= 0 && (p->priority) <= 6)
-    enqueue(&q1, p);
-  else if((p->priority) >= 7 && (p->priority) <= 13)
-    enqueue(&q2, p);
-  else if((p->priority) >= 14 && (p->priority) <= 20)
-    enqueue(&q3, p);
+  // cprintf("calling sched from yield\n");
   sched();
+  yieldcount++;
+  if(p->first == 1){
+  cprintf("PID: %d\tNAME: %s\tQUEUE: %d\trun ticks: %d\n", p->pid, p->name, p->queue_no, p->run_ticks);
+  p->first = 0;
+  }
   release(&ptable.lock);
 }
 
@@ -590,7 +607,7 @@ sleep(void *chan, struct spinlock *lk)
 //     dequeue(&q2);
 //   }
   
-
+  // cprintf("calling sched from sleep\n");
   sched();
 
   // Tidy up.
@@ -614,12 +631,12 @@ wakeup1(void *chan)
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == SLEEPING && p->chan == chan){
       p->state = RUNNABLE;
-      if((p->priority) >= 0 && (p->priority) <= 6)
-        enqueue(&q1, p);
-      else if((p->priority) >= 7 && (p->priority) <= 13)
-        enqueue(&q2, p);
-      else if((p->priority) >= 14 && (p->priority) <= 20)
-        enqueue(&q3, p);
+      // if((p->priority) >= 0 && (p->priority) <= 6)
+      //   enqueue(&q1, p);
+      // else if((p->priority) >= 7 && (p->priority) <= 13)
+      //   enqueue(&q2, p);
+      // else if((p->priority) >= 14 && (p->priority) <= 20)
+      //   enqueue(&q3, p);
     }
       
 }
@@ -648,12 +665,12 @@ kill(int pid)
       // Wake process from sleep if necessary.
       if(p->state == SLEEPING){
         p->state = RUNNABLE;
-        if((p->priority) >= 0 && (p->priority) <= 6)
-          enqueue(&q1, p);
-        if((p->priority) >= 7 && (p->priority) <= 13)
-          enqueue(&q2, p);
-        else if((p->priority) >= 14 && (p->priority) <= 20)
-          enqueue(&q3, p);
+        // if((p->priority) >= 0 && (p->priority) <= 6)
+        //   enqueue(&q1, p);
+        // if((p->priority) >= 7 && (p->priority) <= 13)
+        //   enqueue(&q2, p);
+        // else if((p->priority) >= 14 && (p->priority) <= 20)
+        //   enqueue(&q3, p);
       }
       release(&ptable.lock);
       return 0;

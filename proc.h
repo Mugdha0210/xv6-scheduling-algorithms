@@ -1,3 +1,4 @@
+#include "date.h"
 // Per-CPU state
 struct cpu {
   uchar apicid;                // Local APIC ID
@@ -50,6 +51,7 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   int priority;                // priority of the process
+  int queue_no;                //1, 2, 3
   int start_ticks;
   int run_ticks;
   int end_ticks;
@@ -63,14 +65,12 @@ struct proc {
 //   expandable heap
 
 //3 queues with a maximum of 64 processes each. linked list caused page fault issues, trying queue using an array.
-struct queue{
-  struct proc* q[64];
-  int start;
-  int end;
-  int count;
-  int time;
-};
+// struct queue{
+//   int start;
+//   int end;
+//   int count;
+// };
 
-#define TIME_Q1 1000000
-#define TIME_Q2 500000
-#define TIME_Q3 100000
+#define TIME_Q1 100000
+#define TIME_Q2 50000
+#define TIME_Q3 10000
