@@ -394,7 +394,7 @@ scheduler(void)
   struct proc *p, *p1;
   struct cpu *c = mycpu();
   c->proc = 0;
-  
+  int flag = 0;
   for(;;){
     // Enable interrupts on this processor.
     sti();
@@ -411,9 +411,17 @@ scheduler(void)
       // before jumping back to us.
       highP = p;
       // Choose one with highest priority.
+      flag = 0;
       for (p1 = ptable.proc; p1 < &ptable.proc[NPROC]; p1++){
-        if (p1->state != RUNNABLE)
+        if (p1->state != RUNNABLE){
+          if(p1->state == RUNNING){
+            if(p1->queue_no < highP ->queue_no){
+              flag = 1;
+              break;
+            }
+          }
           continue;
+        }
         if (highP->queue_no > p1->queue_no) //larger value, lower priority
           highP = p1;
         if (highP->queue_no == p1->queue_no){
@@ -422,6 +430,9 @@ scheduler(void)
             break;
           }
         }
+      }
+      if(flag == 1){
+        continue;
       }
       p = highP;
       c->proc = p;
