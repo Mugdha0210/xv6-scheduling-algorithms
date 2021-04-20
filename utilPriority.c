@@ -21,10 +21,14 @@ int main(int argc, char *argv[])
   // else
   // {
     // printf(1, "Child %d created\n", getpid());
-    for(i=0; i < 10000000000; i++){
+    for(i=0; i < 1000000000; i++){
       // printf(1, "Child: %d, ", i);
       // printf(1, "i is %d\n", i);
+      if(i == 999999999 ){
+        printf(1, "i is :%d\n", i);
+      }
        x = x + 3.14*89.64;
+       x = 12345 * 12345;
     }
     //printf(1, "\n");
   // }

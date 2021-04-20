@@ -12,7 +12,7 @@ struct {
   struct proc proc[NPROC];
 } ptable;
 
-int s1 = 0, e1 = 20, c1 = 0, s2 = 21, e2 = 41, c2 = 0, s3 = 42, e3 = 63, c3 = 0;
+// int s1 = 0, e1 = 20, c1 = 0, s2 = 21, e2 = 41, c2 = 0, s3 = 42, e3 = 63, c3 = 0;
 
 // struct queue q1, q2, q3;
 // void qinit(struct queue *q, int base);
@@ -330,21 +330,6 @@ exit(void)
   curproc->state = ZOMBIE;
   cprintf("yieldcount = %d\n", yieldcount);
   cprintf("lapsed ticks = %d\n", ticks - curproc->start_ticks);
-  // if(curproc->queue_number == 2){
-  //   dequeue(&q2);
-  // }
-  // if(curproc->queue_no == 1)
-  //   {cprintf("3 processes in q1 are: %s,\t%s\t%s\n", q1.q[q1.start]->name, q1.q[q1.start + 1]->name, q1.q[q1.start + 2]->name);dequeue(&q1);
-  //   cprintf("dequeued %s, q1.count is %d\n", curproc->name, q1.count);
-  //   cprintf("2 processes in q1 are: %s,\t%s\n", q1.q[q1.start-1]->name, q1.q[q1.start - 2]->name);}
-  // else if(curproc->queue_no == 2)
-  //   {dequeue(&q2);
-  //    cprintf("dequeued %s, q2.count is %d\n", curproc->name, q2.count);}
-  // else if(curproc->queue_no == 3)
-  //   {dequeue(&q3);
-  //  cprintf("dequeued %s, q3.count is %d\n", curproc->name, q3.count); }
-  
-  // cprintf("calling sched from exit\n");
   sched();
   panic("zombie exit");
 }
@@ -377,10 +362,6 @@ wait(void)
         p->name[0] = 0;
         p->killed = 0;
         p->state = UNUSED;
-        // if (p->queue_number == 2)
-        // {
-        //   dequeue(&q2);
-        // }
         
         release(&ptable.lock);
         return pid;
@@ -399,52 +380,6 @@ wait(void)
   }
 }
 
-// struct proc *get_next_process(int q){
-//   // cprintf("In func\n");
-//   int i = 0;
-  
-//   switch(q){
-//     case 1:
-//     while(i < q1.count){
-//       // cprintf("in q1: i = %d\t", i);
-//       i = (i + q1.start) % NPROC;
-//       if(q1.q[i]->state != RUNNABLE){
-//        i = (i + 1) % NPROC;
-//       }
-//       else {
-//         return q1.q[i]; 
-//       }
-//     }
-//     break;
-//     case 2:
-//     while(i < q2.count){
-//       // cprintf("in q2: i = %d\t", i);
-//       i = (i + q2.start) % NPROC;
-//       if(q2.q[i]->state != RUNNABLE){
-//        i = (i + 1) % NPROC;
-//       }
-//       else 
-//         return q2.q[i];
-//     }
-//     break;
-//     case 3:
-//     while(i < q3.count){
-//       // cprintf("in q3: i = %d\t", i);
-//       i = (i + q3.start) % NPROC;
-//       if(q3.q[i]->state != RUNNABLE){
-//        i = (i + 1) % NPROC;
-//       }
-//       else 
-//         return q3.q[i];
-//     }
-//     break;
-//     default:
-//     cprintf("in default");
-//       return 0;
-//       break;
-//   }
-//   return 0;
-// }
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
@@ -456,61 +391,60 @@ wait(void)
 void
 scheduler(void)
 {
-  struct proc *p;
-  int i = 0, flag = 0;
+  struct proc *p, *p1;
   struct cpu *c = mycpu();
   c->proc = 0;
-  // int q = 30;
+  
   for(;;){
     // Enable interrupts on this processor.
     sti();
+    struct proc *highP;
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-    flag = 0;
-    for(i = 1; i < 4; i++){
-      if(i == 1){
-        modify_TICR(TIME_Q1);
-      }
-      else if(i == 2){
-        modify_TICR(TIME_Q2);
-      }
-      else if(i == 3){
-        modify_TICR(TIME_Q3);
-      }
-      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-        if(p->queue_no != i)
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state != RUNNABLE)
+        continue;
+
+      // Switch to chosen process.  It is the process's job
+      // to release ptable.lock and then reacquire it
+      // before jumping back to us.
+      highP = p;
+      // Choose one with highest priority.
+      for (p1 = ptable.proc; p1 < &ptable.proc[NPROC]; p1++){
+        if (p1->state != RUNNABLE)
           continue;
-        if(p->state == RUNNING){
-          flag = 1;
-          break;
+        if (highP->queue_no > p1->queue_no) //larger value, lower priority
+          highP = p1;
+        if (highP->queue_no == p1->queue_no){
+          if(p1->pid > highP->pid){
+            highP = p1;
+            break;
+          }
         }
-        if(p->state != RUNNABLE)
-          continue;
-
-        // Switch to chosen process.  It is the process's job
-        // to release ptable.lock and then reacquire it
-        // before jumping back to us.
-        c->proc = p;
-        switchuvm(p);
-        p->state = RUNNING;
-
-        swtch(&(c->scheduler), p->context);
-        switchkvm();
-
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
       }
-      if(flag == 1){
-        break;
-      }
+      p = highP;
+      c->proc = p;
+      switchuvm(p);
+      p->state = RUNNING;
+      if(p->queue_no == 1)
+        modify_TICR(TIME_Q1);
+      else if(p->queue_no == 2)
+        modify_TICR(TIME_Q2);
+      else if(p->queue_no == 3)
+        modify_TICR(TIME_Q3);
+      swtch(&(c->scheduler), p->context);
+      switchkvm();
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      c->proc = 0;
     }
-    
     release(&ptable.lock);
 
   }
 }
+
 
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state. Saves and restores
