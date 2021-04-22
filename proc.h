@@ -56,6 +56,7 @@ struct proc {
   int run_ticks;
   int end_ticks;
   int first;
+  int yield_count;
 };
 
 // Process memory is laid out contiguously, low addresses first:
@@ -71,6 +72,6 @@ struct proc {
 //   int count;
 // };
 
-#define TIME_Q1 100000
-#define TIME_Q2 95000
-#define TIME_Q3 19000
+#define TIME_Q1 7000000
+#define TIME_Q2 2500000
+#define TIME_Q3 1900000

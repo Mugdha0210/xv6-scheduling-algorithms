@@ -274,7 +274,8 @@ fork(void)
     np->queue_no = 1;
   }
   else{
-    np->queue_no = (pid % 3) + 1;
+    // np->queue_no = (pid % 2) + 1;
+    np->queue_no = 1;
   }
   np->state = RUNNABLE;
   np->start_ticks = ticks;
@@ -425,7 +426,7 @@ scheduler(void)
         if (highP->queue_no > p1->queue_no) //larger value, lower priority
           highP = p1;
         if (highP->queue_no == p1->queue_no){
-          if(p1->pid > highP->pid){
+          if(p1->yield_count < highP->yield_count){
             highP = p1;
             break;
           }
@@ -492,12 +493,14 @@ yield(void)
   struct proc *p = myproc();
   p->state = RUNNABLE;
   // cprintf("calling sched from yield\n");
+  p->yield_count = yieldcount++;
   sched();
-  yieldcount++;
-  if(p->first == 1){
+
+  
+  // if(p->first == 1){
   cprintf("PID: %d\tNAME: %s\tQUEUE: %d\trun ticks: %d\n", p->pid, p->name, p->queue_no, p->run_ticks);
-  p->first = 0;
-  }
+  // p->first = 0;
+  // }
   release(&ptable.lock);
 }
 
