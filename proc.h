@@ -50,13 +50,14 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
-  int priority;                // priority of the process
+  //int priority;                // priority of the process
   int queue_no;                //1, 2, 3
   int start_ticks;
-  int run_ticks;
+  // int run_ticks;
   int end_ticks;
-  int first;
+  // int first;
   int yield_count;
+  int proc_no;
 };
 
 // Process memory is laid out contiguously, low addresses first:
@@ -72,6 +73,6 @@ struct proc {
 //   int count;
 // };
 
-#define TIME_Q1 7000000
-#define TIME_Q2 2500000
-#define TIME_Q3 1900000
+#define TIME_Q1 5000000
+#define TIME_Q2 10000000
+#define TIME_Q3 2000000

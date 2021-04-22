@@ -122,8 +122,8 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
-int             ps(void);
-int             chpriority(int pid, int priority);
+// int             ps(void);
+// int             chpriority(int pid, int priority);
 
 
 // swtch.S

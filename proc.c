@@ -12,14 +12,8 @@ struct {
   struct proc proc[NPROC];
 } ptable;
 
-// int s1 = 0, e1 = 20, c1 = 0, s2 = 21, e2 = 41, c2 = 0, s3 = 42, e3 = 63, c3 = 0;
 
-// struct queue q1, q2, q3;
-// void qinit(struct queue *q, int base);
-// void enqueue(struct queue *q, struct proc *p);
-// struct proc *dequeue(struct queue *q);
-// struct proc *get_next_process(int q);
-
+int c1 = 0, c2 = 0, c3 = 0;
 static struct proc *initproc;
 int yieldcount = 0;
 int nextpid = 1;
@@ -27,41 +21,6 @@ extern void forkret(void);
 extern void trapret(void);
 
 static void wakeup1(void *chan);
-
-// void qinit(struct queue *q, int base){
-//   if(q){
-//     q->end = -1;
-//     q->start = 0;
-//     q->count = 0;
-//   }
-//   else{
-//     panic("queue is null\n");
-//   }
-//   return;
-// }
-
-// void enqueue(struct queue *q, struct proc *p){
-//   if(q->count == NPROC)
-//     panic("Enqueue: Queue full\n");
-//   q->end = ((q->end + 1) % NPROC);
-//   q->count += 1;
-//   q->q[q->end] = p;
-//   return;
-// }
-
-// struct proc *dequeue(struct queue *q){
-//   if(q->count == 0)
-//     panic("Dequeue: Queue empty\n");
-//   struct proc *p = q->q[q->start];
-//   if(p->pid == 1){
-//     q->start = 2;
-//   }
-//   else{
-//     q->start = ((q->start + 1) % NPROC);
-//   }  
-//   q->count--;
-//   return p;
-// }
 
 void
 pinit(void)
@@ -133,16 +92,9 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
-  p->first = 1;
-  if(i >= 0 && i <= 20){
-    p->queue_no = 1;
-  }
-  else if(i >= 21 && i <= 41){
-    p->queue_no = 2;
-  }
-  else if(i >= 42 && i <= 63){
-    p->queue_no = 3;
-  }
+  //p->first = 1;
+  p->queue_no = 1;  //When a process is first created, it should be placed at the highest priority
+  p->proc_no = c1++;
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -270,13 +222,13 @@ fork(void)
   pid = np->pid;
   
   acquire(&ptable.lock);
-  if(pid == 1 || pid == 2){
-    np->queue_no = 1;
-  }
-  else{
-    // np->queue_no = (pid % 2) + 1;
-    np->queue_no = 1;
-  }
+  // if(pid == 1 || pid == 2){
+  //   np->queue_no = 1;
+  // }
+  // else{
+  //   // np->queue_no = (pid % 2) + 1;
+  //   np->queue_no = 1;
+  // }
   np->state = RUNNABLE;
   np->start_ticks = ticks;
   cprintf("PID: %d\tNAME: %s\tQUEUE: %d\tstart ticks: %d\n", np->pid, np->name, np->queue_no, np->start_ticks);
@@ -426,9 +378,16 @@ scheduler(void)
         if (highP->queue_no > p1->queue_no) //larger value, lower priority
           highP = p1;
         if (highP->queue_no == p1->queue_no){
-          if(p1->yield_count < highP->yield_count){
-            highP = p1;
-            break;
+          if(highP->queue_no != 3){
+            if(highP->proc_no > p1->proc_no){
+              highP = p1;
+            }
+          }
+          else{
+            if(p1->yield_count < highP->yield_count){
+              highP = p1;
+            }
+            cprintf("PID: %d\tNAME: %s\tQUEUE: %d\tyield count: %d\n", highP->pid, highP->name, highP->queue_no, highP->yield_count);
           }
         }
       }
@@ -436,6 +395,7 @@ scheduler(void)
         continue;
       }
       p = highP;
+      // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\trun ticks: %d\n", p->pid, p->name, p->queue_no, ticks);
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
@@ -493,13 +453,27 @@ yield(void)
   struct proc *p = myproc();
   p->state = RUNNABLE;
   // cprintf("calling sched from yield\n");
-  p->yield_count = yieldcount++;
-  p->run_ticks = ticks;
+  
+  // p->run_ticks = ticks;
+
+  if(p->queue_no == 1){
+    p->queue_no = 2;
+    p->proc_no = c2++;
+    // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\trun ticks: %d\n", p->pid, p->name, p->queue_no, ticks);
+  }
+  else if(p->queue_no == 2){
+    p->queue_no = 3;
+    p->proc_no = c3++;
+    // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\trun ticks: %d\n", p->pid, p->name, p->queue_no, ticks);
+  }
+  else{
+    p->yield_count = yieldcount++;
+  }
   sched();
 
   
   // if(p->first == 1){
-  cprintf("PID: %d\tNAME: %s\tQUEUE: %d\trun ticks: %d\n", p->pid, p->name, p->queue_no, p->run_ticks);
+  //cprintf("PID: %d\tNAME: %s\tQUEUE: %d\trun ticks: %d\n", p->pid, p->name, p->queue_no, p->run_ticks);
   // p->first = 0;
   // }
   release(&ptable.lock);
@@ -664,41 +638,4 @@ procdump(void)
     }
     cprintf("\n");
   }
-}
-
-int ps()
-{
-  struct proc *p;
-  //Enables interrupts on this processor.
-  sti();
-
-  //Loop over process table looking for process with pid.
-  acquire(&ptable.lock);
-  cprintf("name \t pid \t state \t priority \n");
-  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-  {
-    if (p->state == SLEEPING)
-      cprintf("%s \t %d \t SLEEPING \t %d \n ", p->name, p->pid, p->priority);
-    else if (p->state == RUNNING)
-      cprintf("%s \t %d \t RUNNING \t %d \n ", p->name, p->pid, p->priority);
-    else if (p->state == RUNNABLE)
-      cprintf("%s \t %d \t RUNNABLE \t %d \n ", p->name, p->pid, p->priority);
-  }
-  release(&ptable.lock);
-  return 22;
-}
-int chpriority(int pid, int priority)
-{
-  struct proc *p;
-  acquire(&ptable.lock);
-  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-  {
-    if (p->pid == pid)
-    {
-      p->priority = priority;
-      break;
-    }
-  }
-  release(&ptable.lock);
-  return pid;
 }
