@@ -494,6 +494,7 @@ yield(void)
   p->state = RUNNABLE;
   // cprintf("calling sched from yield\n");
   p->yield_count = yieldcount++;
+  p->run_ticks = ticks;
   sched();
 
   
