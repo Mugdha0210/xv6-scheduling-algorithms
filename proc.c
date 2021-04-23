@@ -274,11 +274,12 @@ fork(void)
     np->queue_no = 1;
   }
   else{
-    // np->queue_no = (pid % 2) + 1;
-    np->queue_no = 1;
+    np->queue_no = (pid % 3) + 1;
+    //np->queue_no = 1;
   }
   np->state = RUNNABLE;
   np->start_ticks = ticks;
+  np->yield_count = 0;
   cprintf("PID: %d\tNAME: %s\tQUEUE: %d\tstart ticks: %d\n", np->pid, np->name, np->queue_no, np->start_ticks);
   release(&ptable.lock);
 
@@ -493,10 +494,10 @@ yield(void)
   struct proc *p = myproc();
   p->state = RUNNABLE;
   // cprintf("calling sched from yield\n");
-  p->yield_count = yieldcount++;
+  p->yield_count++;
   p->run_ticks = ticks;
   sched();
-
+  yieldcount++;
   
   // if(p->first == 1){
   cprintf("PID: %d\tNAME: %s\tQUEUE: %d\trun ticks: %d\n", p->pid, p->name, p->queue_no, p->run_ticks);
