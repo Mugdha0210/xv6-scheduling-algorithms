@@ -52,6 +52,7 @@ struct proc {
   int priority; 	       // U: Process priority
   int creat_time; 	       // U: Time of process creation
   int exit_time;               // U: Time of process exit
+  int exec_count;              // U: No. of times process has been scheduled
 };
 
 // Process memory is laid out contiguously, low addresses first:

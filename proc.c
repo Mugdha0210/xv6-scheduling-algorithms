@@ -89,6 +89,7 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
   p->priority = 10;
+  p->exec_count = 0;
 
   release(&ptable.lock);
 
@@ -329,14 +330,17 @@ wait(void)
 void
 scheduler(void)
 {
-  struct proc *p, *p1;
+  struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
   
   for(;;){
     // Enable interrupts on this processor.
     sti();
-    struct proc *highP;
+
+    int min_count = 10000000;
+    int high_priority = 10000000; 	//low number is high priority
+    struct proc *choice = 0;
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
@@ -344,18 +348,24 @@ scheduler(void)
       if(p->state != RUNNABLE)
         continue;
 
+      if(p->exec_count < min_count){
+        min_count = p->exec_count;
+        high_priority = p->priority;
+        choice = p;
+      }
+      else if(p->exec_count == min_count){
+        if(p->priority < high_priority){
+          high_priority = p->priority;
+          choice = p;
+        }
+      }
+      else
+        continue;
+
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
-      highP = p;
-      // Choose one with highest priority.
-      for (p1 = ptable.proc; p1 < &ptable.proc[NPROC]; p1++){
-        if (p1->state != RUNNABLE)
-          continue;
-        if (highP->priority > p1->priority) //larger value, lower priority
-          highP = p1;
-      }
-      p = highP;
+      p = choice;
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
@@ -365,6 +375,7 @@ scheduler(void)
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
+      // U: It should have incremented its exec_count also.
       c->proc = 0;
     }
     release(&ptable.lock);
@@ -404,6 +415,7 @@ yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
   myproc()->state = RUNNABLE;
+  myproc()->exec_count += 1;
   sched();
   release(&ptable.lock);
 }

@@ -21,13 +21,14 @@ int main(int argc, char *argv[])
   }
   else
   {
-    printf(1, "Child %d created\n", getpid());
+    //printf(1, "Child %d created\n", getpid());
     for(i=0; i < 1000000; i++){
-      printf(1, "Child: %d, ", i);
+      //printf(1, "Child: %d, ", i);
+      ;
     }
     //printf(1, "\n");
   }
-  printf(1, "i: %d, ", i);
+  //printf(1, "i: %d, ", i);
 
   printf(1, "Parent: ");
   time(ppid);
