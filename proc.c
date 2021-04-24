@@ -330,17 +330,18 @@ wait(void)
 void
 scheduler(void)
 {
-  struct proc *p;
+  struct proc *p, *choice;
   struct cpu *c = mycpu();
   c->proc = 0;
+  int min_count, high_priority;
   
   for(;;){
     // Enable interrupts on this processor.
     sti();
 
-    int min_count = 10000000;
-    int high_priority = 10000000; 	//low number is high priority
-    struct proc *choice = 0;
+    min_count = 10000000;
+    high_priority = 10000000; 	//low number is high priority
+    choice = 0;
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
@@ -369,13 +370,13 @@ scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+      p->exec_count++;
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
-      // U: It should have incremented its exec_count also.
       c->proc = 0;
     }
     release(&ptable.lock);
@@ -415,7 +416,6 @@ yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
   myproc()->state = RUNNABLE;
-  myproc()->exec_count += 1;
   sched();
   release(&ptable.lock);
 }
