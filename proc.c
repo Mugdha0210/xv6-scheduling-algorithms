@@ -268,8 +268,6 @@ exit(void)
 
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
-  curproc->exit_time = ticks;
-  //cprintf("------ %d -- Created: %d -- Exited: %d ------\n", curproc->pid, curproc->creat_time, curproc->exit_time); 
 
   sched();
   panic("zombie exit");
@@ -577,11 +575,11 @@ int ps()
   cprintf("name \t pid \t state \t priority \n");
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if (p->state == SLEEPING)
-      cprintf("%s \t %d \t SLEEPING \t %d \n ", p->name, p->pid, p->priority);
+      cprintf("%s \t %d \t SLEEPING \t %d \t %d \n ", p->name, p->pid, p->priority, p->exec_count);
     else if (p->state == RUNNING)
-      cprintf("%s \t %d \t RUNNING \t %d \n ", p->name, p->pid, p->priority);
+      cprintf("%s \t %d \t RUNNING \t %d \t %d \n ", p->name, p->pid, p->priority, p->exec_count);
     else if (p->state == RUNNABLE)
-      cprintf("%s \t %d \t RUNNABLE \t %d \n ", p->name, p->pid, p->priority);
+      cprintf("%s \t %d \t RUNNABLE \t %d \t %d \n ", p->name, p->pid, p->priority, p->exec_count);
   }
   release(&ptable.lock);
   return 22;

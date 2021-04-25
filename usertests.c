@@ -391,11 +391,11 @@ preempt(void)
   close(pfds[0]);
   printf(1, "kill... ");
   kill(pid1);
-  printf(1, "kill1 ");
+  printf(1, "kill 1 ");
   kill(pid2);
-  printf(1, "kill2 ");
+  printf(1, "kill 2 ");
   kill(pid3);
-  printf(1, "kill3 ");
+  printf(1, "kill 3 ");
   printf(1, "wait... ");
   wait();
   wait();
@@ -609,8 +609,6 @@ createdelete(void)
           printf(1, "create failed\n");
           exit();
         }
-        else
-          printf(1, "create success\n");
         close(fd);
         if(i > 0 && (i % 2 ) == 0){
           name[1] = '0' + (i / 2);
@@ -618,8 +616,6 @@ createdelete(void)
             printf(1, "unlink failed\n");
             exit();
           }
-          else
-            printf(1, "unlink success\n");
         }
       }
       exit();
@@ -628,11 +624,12 @@ createdelete(void)
 
   for(pi = 0; pi < 4; pi++){
     wait();
-    printf(1, "waited\n");
+    printf(1, "wait %d\t", pi);
   }
 
   name[0] = name[1] = name[2] = 0;
   for(i = 0; i < N; i++){
+    printf(1, "oops loop %d\n", i);
     for(pi = 0; pi < 4; pi++){
       name[0] = 'p' + pi;
       name[1] = '0' + i;
@@ -654,6 +651,7 @@ createdelete(void)
       name[0] = 'p' + i;
       name[1] = '0' + i;
       unlink(name);
+      printf(1, "unlinked %d\n", i);
     }
   }
 
