@@ -88,7 +88,6 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
-  p->priority = 10;
   p->exec_count = 0;
 
   release(&ptable.lock);
@@ -114,8 +113,8 @@ found:
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
 
-  p->creat_time = ticks;
-  p->exit_time = 0;
+  //p->creat_time = ticks;
+  //p->exit_time = 0;
 
   return p;
 }
@@ -220,6 +219,7 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
+  np->priority = curproc->priority;
 
   release(&ptable.lock);
 
@@ -328,11 +328,24 @@ wait(void)
 void
 scheduler(void)
 {
-  struct proc *p, *choice;
+  struct proc *p;
+  struct proc *choice;
   struct cpu *c = mycpu();
   c->proc = 0;
   int min_count, high_priority;
+  //int time_slice;
   
+  /*
+  static char *states[] = {
+  [UNUSED]    "unused",
+  [EMBRYO]    "embryo",
+  [SLEEPING]  "sleep ",
+  [RUNNABLE]  "runble",
+  [RUNNING]   "run   ",
+  [ZOMBIE]    "zombie"
+  };
+  */
+
   for(;;){
     // Enable interrupts on this processor.
     sti();
@@ -347,13 +360,18 @@ scheduler(void)
       if(p->state != RUNNABLE)
         continue;
 
-      if(p->exec_count < min_count){
+      //cprintf("U: state: %s\n", states[p->state]);
+
+      if((p->exec_count < min_count) && (p->state == RUNNABLE)){
+        //cprintf("in if\n");
         min_count = p->exec_count;
         high_priority = p->priority;
         choice = p;
       }
-      else if(p->exec_count == min_count){
-        if(p->priority < high_priority){
+      else if((p->exec_count == min_count) && (p->state == RUNNABLE)){
+        //cprintf("in else if\n");
+        if((p->priority < high_priority) && (p->state == RUNNABLE)){
+          //cprintf("in else if cha if\n");
           high_priority = p->priority;
           choice = p;
         }
@@ -368,7 +386,15 @@ scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
-      p->exec_count++;
+      //p->exec_count++;
+
+      /*
+      time_slice = 10000000*(20-(choice->priority)); 
+      if(time_slice > MAX_SLICE)
+        lapicw(TICR, MAX_SLICE);
+      else
+        lapicw(TICR, time_slice);
+      */
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
@@ -572,7 +598,7 @@ int ps()
 
   //Loop over process table looking for process with pid.
   acquire(&ptable.lock);
-  cprintf("name \t pid \t state \t priority \n");
+  cprintf("name \t pid \t state \t priority \t exec_count\n");
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if (p->state == SLEEPING)
       cprintf("%s \t %d \t SLEEPING \t %d \t %d \n ", p->name, p->pid, p->priority, p->exec_count);
