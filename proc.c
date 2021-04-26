@@ -153,6 +153,7 @@ userinit(void)
   acquire(&ptable.lock);
 
   p->state = RUNNABLE;
+  p->priority = 1;
 
   release(&ptable.lock);
 }
@@ -328,31 +329,25 @@ wait(void)
 void
 scheduler(void)
 {
-  struct proc *p;
+  struct proc *p, *p1;
   struct proc *choice;
   struct cpu *c = mycpu();
   c->proc = 0;
   int min_count, high_priority;
   //int time_slice;
   
-  /*
-  static char *states[] = {
-  [UNUSED]    "unused",
-  [EMBRYO]    "embryo",
-  [SLEEPING]  "sleep ",
-  [RUNNABLE]  "runble",
-  [RUNNING]   "run   ",
-  [ZOMBIE]    "zombie"
-  };
-  */
+  //static char *states[] = {
+  //[UNUSED]    "unused",
+  //[EMBRYO]    "embryo",
+  //[SLEEPING]  "sleep ",
+  //[RUNNABLE]  "runble",
+  //[RUNNING]   "run   ",
+  //[ZOMBIE]    "zombie"
+  //};
 
   for(;;){
     // Enable interrupts on this processor.
     sti();
-
-    min_count = 10000000;
-    high_priority = 10000000; 	//low number is high priority
-    choice = 0;
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
@@ -360,41 +355,36 @@ scheduler(void)
       if(p->state != RUNNABLE)
         continue;
 
-      //cprintf("U: state: %s\n", states[p->state]);
+      min_count = 10000000;
+      high_priority = 10000000;
+      choice = 0;
 
-      if((p->exec_count < min_count) && (p->state == RUNNABLE)){
-        //cprintf("in if\n");
-        min_count = p->exec_count;
-        high_priority = p->priority;
-        choice = p;
-      }
-      else if((p->exec_count == min_count) && (p->state == RUNNABLE)){
-        //cprintf("in else if\n");
-        if((p->priority < high_priority) && (p->state == RUNNABLE)){
-          //cprintf("in else if cha if\n");
-          high_priority = p->priority;
-          choice = p;
+      for(p1 = ptable.proc; p1 < &ptable.proc[NPROC]; p1++){
+        if(p1->state != RUNNABLE)
+          continue;
+        if(p1->exec_count < min_count){
+          min_count = p1->exec_count;
+          high_priority = p1->priority;
+          choice = p1;
+        } 
+        if(p1->exec_count == min_count){
+          if(p1->priority < high_priority){
+            high_priority = p1->priority;
+            choice = p1;
+          }
         }
+        else
+          continue;
       }
-      else
-        continue;
+
+      p = choice;
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
-      p = choice;
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
-      //p->exec_count++;
-
-      /*
-      time_slice = 10000000*(20-(choice->priority)); 
-      if(time_slice > MAX_SLICE)
-        lapicw(TICR, MAX_SLICE);
-      else
-        lapicw(TICR, time_slice);
-      */
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
@@ -439,6 +429,7 @@ void
 yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
+  myproc()->exec_count++;
   myproc()->state = RUNNABLE;
   sched();
   release(&ptable.lock);
