@@ -276,7 +276,7 @@ fork(void)
   }
   else{
     // np->queue_no = (pid % 3) + 1;
-    np->queue_no = 1;
+    np->queue_no = 3;
   }
   np->state = RUNNABLE;
   np->start_ticks = ticks;
