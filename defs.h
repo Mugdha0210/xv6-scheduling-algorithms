@@ -62,6 +62,7 @@ void            iderw(struct buf*);
 void            ioapicenable(int irq, int cpu);
 extern uchar    ioapicid;
 void            ioapicinit(void);
+void            modify_TICR(int ts);
 
 // kalloc.c
 char*           kalloc(void);

@@ -334,7 +334,7 @@ scheduler(void)
   struct cpu *c = mycpu();
   c->proc = 0;
   int min_count, high_priority;
-  //int time_slice;
+  int time_slice;
   
   //static char *states[] = {
   //[UNUSED]    "unused",
@@ -385,6 +385,9 @@ scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+
+      time_slice = 10000000 * (20 - (p->priority));
+      modify_TICR(time_slice);
 
       swtch(&(c->scheduler), p->context);
       switchkvm();

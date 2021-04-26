@@ -68,7 +68,7 @@ lapicinit(void)
   // TICR would be calibrated using an external time source.
   lapicw(TDCR, X1);
   lapicw(TIMER, PERIODIC | (T_IRQ0 + IRQ_TIMER));
-  lapicw(TICR, 10000000);
+  //lapicw(TICR, 10000000);
 
   // Disable logical interrupt lines.
   lapicw(LINT0, MASKED);
@@ -228,4 +228,12 @@ cmostime(struct rtcdate *r)
 
   *r = t1;
   r->year += 2000;
+}
+
+void modify_TICR(int ts)
+{
+  if(ts > MAX_SLICE)
+    lapicw(TICR, MAX_SLICE);
+  else
+    lapicw(TICR, ts);
 }
