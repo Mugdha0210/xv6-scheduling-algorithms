@@ -6,7 +6,7 @@ int main(int argc, char *argv[])
 {
   // int pid;
   //int ppid = 1; 	//parent is init if failure
-  int i,x;
+  int x;
   // pid = fork();
   // if (pid < 0)
   // {
@@ -21,15 +21,15 @@ int main(int argc, char *argv[])
   // else
   // {
     // printf(1, "Child %d created\n", getpid());
-    for(i=0; i < 220000; i++){
-      // printf(1, "Child: %d, ", i);
-      // printf(1, "i is %d\n", i);
-      if(i == (220000 - 1) ){
-        printf(1, "i is :%d\n", i);
-      }
-       x = x + 3.14*89.64;
-       x = 12345 * 12345;
-    }
+    // for(i=0; i < 220000; i++){
+    //   // printf(1, "Child: %d, ", i);
+    //   // printf(1, "i is %d\n", i);
+    //   if(i == (220000 - 1) ){
+    //     printf(1, "i is :%d\n", i);
+    //   }
+    //    x = x + 3.14*89.64;
+    //    x = 12345 * 12345;
+    // }
     //printf(1, "\n");
   // }
   // printf(1, "i: %d, ", i);
@@ -39,6 +39,10 @@ int main(int argc, char *argv[])
 
   // printf(1, "Child: ");
   // time(pid);
+  while(1){
+    x = x + 3.14*89.64;
+    x = 12345 * 12345;
+  }
   printf(1, "utilprio calling exit\n");
   exit();
 }

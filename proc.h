@@ -72,6 +72,6 @@ struct proc {
 //   int count;
 // };
 
-#define TIME_Q1 7000000
+#define TIME_Q1 10000000
 #define TIME_Q2 2500000
 #define TIME_Q3 1900000

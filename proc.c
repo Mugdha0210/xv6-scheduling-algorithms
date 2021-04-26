@@ -134,15 +134,16 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
   p->first = 1;
-  if(i >= 0 && i <= 20){
-    p->queue_no = 1;
-  }
-  else if(i >= 21 && i <= 41){
-    p->queue_no = 2;
-  }
-  else if(i >= 42 && i <= 63){
-    p->queue_no = 3;
-  }
+  // if(i >= 0 && i <= 20){
+  //   p->queue_no = 1;
+  // }
+  // else if(i >= 21 && i <= 41){
+  //   p->queue_no = 2;
+  // }
+  // else if(i >= 42 && i <= 63){
+  //   p->queue_no = 3;
+  // }
+  p->queue_no = 1;
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -274,8 +275,8 @@ fork(void)
     np->queue_no = 1;
   }
   else{
-    np->queue_no = (pid % 3) + 1;
-    //np->queue_no = 1;
+    // np->queue_no = (pid % 3) + 1;
+    np->queue_no = 1;
   }
   np->state = RUNNABLE;
   np->start_ticks = ticks;
@@ -500,7 +501,7 @@ yield(void)
   yieldcount++;
   
   // if(p->first == 1){
-  cprintf("PID: %d\tNAME: %s\tQUEUE: %d\trun ticks: %d\n", p->pid, p->name, p->queue_no, p->run_ticks);
+  // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\trun ticks: %d\n", p->pid, p->name, p->queue_no, p->run_ticks);
   // p->first = 0;
   // }
   release(&ptable.lock);
@@ -675,31 +676,34 @@ int ps()
 
   //Loop over process table looking for process with pid.
   acquire(&ptable.lock);
-  cprintf("name \t pid \t state \t priority \n");
+  cprintf("name \t pid \t state \t queue \n");
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
     if (p->state == SLEEPING)
-      cprintf("%s \t %d \t SLEEPING \t %d \n ", p->name, p->pid, p->priority);
+      cprintf("%s \t %d \t SLEEPING \t %d \n ", p->name, p->pid, p->queue_no);
     else if (p->state == RUNNING)
-      cprintf("%s \t %d \t RUNNING \t %d \n ", p->name, p->pid, p->priority);
+      cprintf("%s \t %d \t RUNNING \t %d \n ", p->name, p->pid, p->queue_no);
     else if (p->state == RUNNABLE)
-      cprintf("%s \t %d \t RUNNABLE \t %d \n ", p->name, p->pid, p->priority);
+      cprintf("%s \t %d \t RUNNABLE \t %d \n ", p->name, p->pid, p->queue_no);
   }
   release(&ptable.lock);
   return 22;
 }
-int chpriority(int pid, int priority)
+int chpriority(int pid, int queue_num)
 {
   struct proc *p;
   acquire(&ptable.lock);
-  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-  {
-    if (p->pid == pid)
-    {
-      p->priority = priority;
-      break;
-    }
+  if(queue_num <= 3 && queue_num >= 1){
+    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+      {
+        if (p->pid == pid)
+        {
+          p->queue_no = queue_num;
+          break;
+        }
+      }
   }
+  
   release(&ptable.lock);
   return pid;
 }

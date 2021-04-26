@@ -5,20 +5,20 @@
 
 int main(int argc, char *argv[])
 {
-  int niceness, pid;
+  int queue_num, pid;
   if (argc < 3)
   {
-    printf(2, "Usage: nice <pid> <niceness>\n");
+    printf(2, "Usage: nice <pid> <queue_num>\n");
     exit();
   }
   pid = atoi(argv[1]);
-  niceness = atoi(argv[2]);
-  //niceness in range 0 to 20, and priorities in range 20 to 40.
-  if ((niceness < 0) || (niceness > 20))
+  queue_num = atoi(argv[2]);
+  //queue_num in range 0 to 20, and priorities in range 20 to 40.
+  if ((queue_num < 0) || (queue_num > 20))
   {
-    printf(2, "Give a value of niceness between 0 and 20.\n");
+    printf(2, "Give a value of queue_num between 0 and 20.\n");
     exit();
   }
-  chpriority(pid, niceness);
+  chpriority(pid, queue_num);
   exit();
 }
