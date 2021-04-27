@@ -50,8 +50,10 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   int priority; 	       // U: Process priority
-  int creat_time; 	       // U: Time of process creation
-  int exit_time;               // U: Time of process exit
+  int start_ticks; 	       // U: Time of first process scheduling
+  int sched_ticks; 	       // U: Time of process scheduling
+  int yield_ticks;             // U: Time of process yield
+  int exit_ticks;              // U: Time of process exit
   int exec_count;              // U: No. of times process has been scheduled
 };
 

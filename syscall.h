@@ -22,5 +22,3 @@
 #define SYS_close  21
 #define SYS_ps     22
 #define SYS_chpriority 23
-#define SYS_time   24
-

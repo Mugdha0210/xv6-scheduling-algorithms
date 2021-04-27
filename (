@@ -91,7 +91,6 @@ found:
   p->exec_count = 0;
   p->sched_ticks = 0;
   p->yield_ticks = 0;
-  p->exit_ticks = 0;
 
   release(&ptable.lock);
 
@@ -221,7 +220,6 @@ fork(void)
 
   np->state = RUNNABLE;
   np->priority = curproc->priority;
-  np->start_ticks = ticks;
 
   release(&ptable.lock);
 
@@ -235,12 +233,8 @@ void
 exit(void)
 {
   struct proc *curproc = myproc();
-  struct proc *p, *p1;
+  struct proc *p;
   int fd;
-
-  p1 = curproc;
-  p1->exit_ticks = ticks;
-  cprintf("%s\t PID: %d\t EC: %d\t PR: %d\t RT: %d\n", p1->name, p1->pid, p1->exec_count, p1->priority, p1->exit_ticks-p1->start_ticks);
 
   if(curproc == initproc)
     panic("init exiting");
@@ -391,7 +385,7 @@ scheduler(void)
       switchuvm(p);
       p->state = RUNNING;
 
-      time_slice = 100000000 * (20 - (p->priority));
+      time_slice = 50000000 * (20 - (p->priority));
       modify_TICR(time_slice);
 
       p->sched_ticks = ticks;
@@ -443,8 +437,7 @@ yield(void)
   myproc()->exec_count++;
   //myproc()->yield_ticks = ticks;
   myproc()->state = RUNNABLE;
-  cprintf("%s %d yielded\n", p->name, p->pid);
-  //cprintf("PID: %d\t EC: %d\t PR: %d\t RT: %d\n", p->pid, p->exec_count, p->priority, p->yield_ticks-p->sched_ticks);
+  //cprintf("PID: %d\t EC: %d\t PR: %d\t RT: %d\n", p->pid, p->exec_count, p->priority, p->yield_ticks-p->yield_ticks);
 
   sched();
   release(&ptable.lock);
@@ -604,14 +597,14 @@ int ps()
 
   //Loop over process table looking for process with pid.
   acquire(&ptable.lock);
-  cprintf("name \t pid \t state \t priority \t exec_count\n");
+  cprintf("name \t pid \t state \t priority \t exec_count \t run_time\n");
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if (p->state == SLEEPING)
-      cprintf("%s \t %d \t SLEEPING \t %d \t %d\n ", p->name, p->pid, p->priority, p->exec_count);
+      cprintf("%s \t %d \t SLEEPING \t %d \t %d \t %d\n ", p->name, p->pid, p->priority, p->exec_count, p->yield_ticks-p->sched_ticks);
     else if (p->state == RUNNING)
-      cprintf("%s \t %d \t RUNNING \t %d \t %d\n ", p->name, p->pid, p->priority, p->exec_count);
+      cprintf("%s \t %d \t RUNNING \t %d \t %d \t %d\n ", p->name, p->pid, p->priority, p->exec_count, p->yield_ticks-p->sched_ticks);
     else if (p->state == RUNNABLE)
-      cprintf("%s \t %d \t RUNNABLE \t %d \t %d\n ", p->name, p->pid, p->priority, p->exec_count);
+      cprintf("%s \t %d \t RUNNABLE \t %d \t %d \t %d\n ", p->name, p->pid, p->priority, p->exec_count, p->yield_ticks-p->sched_ticks);
   }
   release(&ptable.lock);
   return 22;

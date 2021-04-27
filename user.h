@@ -4,7 +4,6 @@ struct rtcdate;
 // system calls
 int chpriority(int, int);
 int ps(void);
-int time(int);
 int fork(void);
 int exit(void) __attribute__((noreturn));
 int wait(void);
