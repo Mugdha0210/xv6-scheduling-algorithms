@@ -232,6 +232,7 @@ fork(void)
   np->state = RUNNABLE;
   np->start_ticks = ticks;
   np->yield_count = 0;
+  np->queue_no = 1;
   cprintf("PID: %d\tNAME: %s\tQUEUE: %d\tstart ticks: %d\n", np->pid, np->name, np->queue_no, np->start_ticks);
   release(&ptable.lock);
 
@@ -458,8 +459,10 @@ yield(void)
   // p->run_ticks = ticks;
 
   if(p->queue_no == 1){
-    p->queue_no = 2;
-    p->proc_no = c2++;
+    if(p->pid != 1 && p->pid != 2){
+      p->queue_no = 2;
+      p->proc_no = c2++;
+    }
     // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\trun ticks: %d\n", p->pid, p->name, p->queue_no, ticks);
   }
   else if(p->queue_no == 2){
@@ -468,7 +471,12 @@ yield(void)
     // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\trun ticks: %d\n", p->pid, p->name, p->queue_no, ticks);
   }
   else{
-    p->yield_count++;
+    if(p->yield_count < 5)
+      p->yield_count++;
+    else{
+      p->queue_no = 1;
+      p->proc_no = c1++;
+    }
   }
   yieldcount++;
   sched();
