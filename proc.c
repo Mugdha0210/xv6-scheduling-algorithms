@@ -382,14 +382,14 @@ sched(void)
 }
 
 // Give up the CPU for one scheduling round.
-void
-yield(void)
-{
-  acquire(&ptable.lock);  //DOC: yieldlock
-  myproc()->state = RUNNABLE;
-  sched();
-  release(&ptable.lock);
-}
+// void
+// yield(void)
+// {
+//   acquire(&ptable.lock);  //DOC: yieldlock
+//   myproc()->state = RUNNABLE;
+//   sched();
+//   release(&ptable.lock);
+// }
 
 // A fork child's very first scheduling by scheduler()
 // will swtch here.  "Return" to user space.
