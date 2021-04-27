@@ -88,6 +88,7 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  cprintf("PID %d -- %s -- created : %d\n", p->pid, p->name, ticks);
 
   release(&ptable.lock);
 
@@ -215,6 +216,7 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
+  cprintf("PID %d -- %s -- came : %d\n", np->pid, np->name, ticks);
 
   release(&ptable.lock);
 
@@ -397,6 +399,7 @@ void
 forkret(void)
 {
   static int first = 1;
+  cprintf("PID %d -- %s -- served : %d\n", myproc()->pid, myproc()->name, ticks);
   // Still holding ptable.lock from scheduler.
   release(&ptable.lock);
 
