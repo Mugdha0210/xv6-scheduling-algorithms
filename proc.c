@@ -215,6 +215,7 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
+  np->start_ticks = 0;
 
   release(&ptable.lock);
 
@@ -241,6 +242,7 @@ exit(void)
       curproc->ofile[fd] = 0;
     }
   }
+  cprintf("PID: %d\tNAME: %s\tLapsed ticks: %d\n", curproc->pid, curproc->name, (ticks - curproc->start_ticks));
 
   begin_op();
   iput(curproc->cwd);
