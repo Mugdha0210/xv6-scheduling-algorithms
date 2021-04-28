@@ -88,7 +88,11 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
-  cprintf("PID %d -- %s -- created : %d\n", p->pid, p->name, ticks);
+  p->sched_ticks = 0;
+  p->end_ticks = 0;
+  p->cpu_burst = 0;
+  p->create_ticks = ticks;
+  cprintf("PID %d -- %s -- created : %d\n", p->pid, p->name, p->create_ticks);
 
   release(&ptable.lock);
 
@@ -236,6 +240,11 @@ exit(void)
   if(curproc == initproc)
     panic("init exiting");
 
+  curproc->end_ticks = ticks;
+  cprintf("PID %d -- %s -- exited : %d\n", curproc->pid, curproc->name, curproc->end_ticks);
+  cprintf("PID %d -- %s -- turnaround : %d\n", curproc->pid, curproc->name, curproc->end_ticks-curproc->create_ticks);
+  cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, curproc->end_ticks-curproc->sched_ticks);
+
   // Close all open files.
   for(fd = 0; fd < NOFILE; fd++){
     if(curproc->ofile[fd]){
@@ -243,7 +252,7 @@ exit(void)
       curproc->ofile[fd] = 0;
     }
   }
-  cprintf("PID: %d\tNAME: %s\tLapsed ticks: %d\n", curproc->pid, curproc->name, (ticks - curproc->start_ticks));
+  cprintf("PID: %d\tNAME: %s\tLapsed ticks: %d\n", curproc->pid, curproc->name, (ticks - curproc->create_ticks));
 
   begin_op();
   iput(curproc->cwd);
@@ -345,6 +354,7 @@ scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+      p->sched_ticks = ticks;
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
@@ -442,6 +452,8 @@ sleep(void *chan, struct spinlock *lk)
   // Go to sleep.
   p->chan = chan;
   p->state = SLEEPING;
+  //p->sleep_ticks = ticks;
+  p->cpu_burst += (ticks - p->sched_ticks);
 
   sched();
 
