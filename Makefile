@@ -179,15 +179,8 @@ UPROGS=\
 	_sh\
 	_stressfs\
 	_usertests\
-<<<<<<< HEAD
 	_util\
-=======
-        _util\
-<<<<<<< HEAD
->>>>>>> 94c8bb4bafc55dd0da8e4e01357b0e84480bdd7e
-=======
-        _util2\
->>>>>>> a18cc4ad2c58aa080960f9756f6fe93f08451dd5
+	_util2\
 	_wc\
 	_zombie\
 

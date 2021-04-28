@@ -5,7 +5,7 @@
 int main(int argc, char *argv[]) {
   int x, z;
 
-  for(z = 1; z < 2200000000; z++){
+  for(z = 1; z < 2200; z++){
     x = 0;
     x = x + 12345 * 12345; 
   }
