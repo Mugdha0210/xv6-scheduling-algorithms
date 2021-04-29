@@ -363,23 +363,17 @@ preempt(void)
 
   printf(1, "preempt: ");
   pid1 = fork();
-  printf(1, "1\n");
   if(pid1 == 0){
-    printf(1, "before for in pid1\n");
     for(;;)
       ;
-    printf(1, "after for in pid1\n");
   }
     
   printf(1, "2\n");
   pid2 = fork();
   if(pid2 == 0){
-    printf(1, "before for in pid2\n");
     for(;;)
       ;
-    printf(1, "after for in pid2\n");
   }
-  printf(1, "3\n");
   pipe(pfds);
   pid3 = fork();
   if(pid3 == 0){
