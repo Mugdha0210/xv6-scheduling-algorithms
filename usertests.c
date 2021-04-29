@@ -370,7 +370,6 @@ preempt(void)
   if(pid2 == 0)
     for(;;)
       ;
-
   pipe(pfds);
   pid3 = fork();
   if(pid3 == 0){
