@@ -363,16 +363,16 @@ preempt(void)
 
   printf(1, "preempt: ");
   pid1 = fork();
-  if(pid1 == 0){
+  if(pid1 == 0)
     for(;;)
       ;
-  }
+  
     
   pid2 = fork();
-  if(pid2 == 0){
+  if(pid2 == 0)
     for(;;)
       ;
-  }
+  
   pipe(pfds);
   pid3 = fork();
   if(pid3 == 0){
