@@ -4,13 +4,10 @@
 
 int main(int argc, char *argv[]) {
   int pid;
-  int k;
-  int x, z;
+  int z;
 
-  x = 0;
   pid = 0;
 
-  for ( k = 0; k < 5; k++ ) {
     pid = fork ();
     if ( pid < 0 ) {
       printf(1, "%d failed in fork!\n", getpid());
@@ -22,9 +19,10 @@ int main(int argc, char *argv[]) {
     }
     else {
 	//printf(1,"Child %d created\n",getpid());
-	for(z = 0; z < 4000000000; z++)
-	    x = x + 12345 * 12345; 
+  int x;
+	for(z = 0; z < 40; z++)
+	    x += 12; 
     }
-  }
+  printf(1, "util calling exit\n");
   exit();
 }
