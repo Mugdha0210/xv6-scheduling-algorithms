@@ -88,11 +88,6 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
-  p->sched_ticks = 0;
-  p->end_ticks = 0;
-  p->cpu_burst = 0;
-  p->create_ticks = ticks;
-  cprintf("PID %d -- %s -- created : %d\n", p->pid, p->name, p->create_ticks);
 
   release(&ptable.lock);
 
@@ -220,7 +215,6 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
-  cprintf("PID %d -- %s -- came : %d\n", np->pid, np->name, ticks);
 
   release(&ptable.lock);
 
@@ -240,11 +234,6 @@ exit(void)
   if(curproc == initproc)
     panic("init exiting");
 
-  curproc->end_ticks = ticks;
-  cprintf("PID %d -- %s -- exited : %d\n", curproc->pid, curproc->name, curproc->end_ticks);
-  cprintf("PID %d -- %s -- turnaround : %d\n", curproc->pid, curproc->name, curproc->end_ticks-curproc->create_ticks);
-  cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, curproc->end_ticks-curproc->sched_ticks);
-
   // Close all open files.
   for(fd = 0; fd < NOFILE; fd++){
     if(curproc->ofile[fd]){
@@ -252,7 +241,6 @@ exit(void)
       curproc->ofile[fd] = 0;
     }
   }
-  cprintf("PID: %d\tNAME: %s\tLapsed ticks: %d\n", curproc->pid, curproc->name, (ticks - curproc->create_ticks));
 
   begin_op();
   iput(curproc->cwd);
@@ -410,7 +398,6 @@ void
 forkret(void)
 {
   static int first = 1;
-  cprintf("PID %d -- %s -- served : %d\n", myproc()->pid, myproc()->name, ticks);
   // Still holding ptable.lock from scheduler.
   release(&ptable.lock);
 
