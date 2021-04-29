@@ -365,8 +365,7 @@ preempt(void)
   pid1 = fork();
   if(pid1 == 0)
     for(;;)
-      ;
-      
+      ;    
   pid2 = fork();
   if(pid2 == 0)
     for(;;)
