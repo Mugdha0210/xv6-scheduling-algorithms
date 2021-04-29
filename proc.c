@@ -14,6 +14,8 @@ struct {
 
 static struct proc *initproc;
 
+struct sched_stats ss;
+
 int nextpid = 1;
 extern void forkret(void);
 extern void trapret(void);
@@ -75,12 +77,14 @@ allocproc(void)
 {
   struct proc *p;
   char *sp;
-
+  int i = 0;
   acquire(&ptable.lock);
 
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->state == UNUSED)
       goto found;
+    i++;
+  }
 
   release(&ptable.lock);
   return 0;
@@ -91,8 +95,7 @@ found:
   p->sched_ticks = 0;
   p->end_ticks = 0;
   p->cpu_burst = 0;
-  p->create_ticks = ticks;
-  cprintf("PID %d -- %s -- created : %d\n", p->pid, p->name, p->create_ticks);
+  p->index = i;
 
   release(&ptable.lock);
 
@@ -220,6 +223,10 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
+  np->first = 1;
+  np->create_ticks = ticks;
+  if(ss.min_AT > np->create_ticks)
+    ss.min_AT = np->create_ticks;
   cprintf("PID %d -- %s -- came : %d\n", np->pid, np->name, ticks);
 
   release(&ptable.lock);
@@ -240,11 +247,6 @@ exit(void)
   if(curproc == initproc)
     panic("init exiting");
 
-  curproc->end_ticks = ticks;
-  cprintf("PID %d -- %s -- exited : %d\n", curproc->pid, curproc->name, curproc->end_ticks);
-  cprintf("PID %d -- %s -- turnaround : %d\n", curproc->pid, curproc->name, curproc->end_ticks-curproc->create_ticks);
-  cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, curproc->end_ticks-curproc->sched_ticks);
-
   // Close all open files.
   for(fd = 0; fd < NOFILE; fd++){
     if(curproc->ofile[fd]){
@@ -252,8 +254,16 @@ exit(void)
       curproc->ofile[fd] = 0;
     }
   }
-  cprintf("PID: %d\tNAME: %s\tLapsed ticks: %d\n", curproc->pid, curproc->name, (ticks - curproc->create_ticks));
-
+  curproc->end_ticks = ticks;
+  ss.turnaround[curproc->index] = (curproc->end_ticks-curproc->create_ticks);
+  curproc->cpu_burst = (curproc->end_ticks - curproc->sched_ticks);
+  ss.cpu_burst[curproc->index] = curproc -> cpu_burst;
+  cprintf("PID %d -- %s -- exited : %d\n", curproc->pid, curproc->name, curproc->end_ticks);
+  cprintf("PID %d -- %s -- turnaround : %d\n", curproc->pid, curproc->name, ss.turnaround[curproc->index]);
+  cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, ss.cpu_burst[curproc->index]);
+  cprintf("PID: %d\tNAME: %s\tLapsed ticks: %d\n", curproc->pid, curproc->name, (curproc->end_ticks - curproc->create_ticks));
+  if(ss.max_CT < curproc->end_ticks)
+    ss.max_CT = curproc->end_ticks;
   begin_op();
   iput(curproc->cwd);
   end_op();
@@ -275,6 +285,7 @@ exit(void)
 
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
+  ss.nprocesses_completed += 1;
   sched();
   panic("zombie exit");
 }
@@ -355,7 +366,10 @@ scheduler(void)
       switchuvm(p);
       p->state = RUNNING;
       p->sched_ticks = ticks;
-
+      if(p->first == 1){
+        p->first = 0;
+        ss.nprocesses_scheduled += 1;
+      }
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -547,4 +561,35 @@ procdump(void)
     }
     cprintf("\n");
   }
+}
+
+int getStats(int n){
+  //n = 1: CPU utilisation
+  //n = 2: Throughput
+  //n = 3: Turnaround time
+
+  //n = 1: CPU burst
+  //n = 2: duration
+  //n = 3: Turnaround time
+  //n = 4: nprocesscomp
+  int i = 0, cpu_burst = 0, tt = 0;
+  if(n == 1){
+    for(i = 0; i < NPROC; i++){
+        cpu_burst += ss.cpu_burst[i];
+    }
+    return (cpu_burst);
+  }
+  else if(n == 2){
+    return (ss.max_CT - ss.min_AT);
+  }
+  else if(n == 3){
+    for(i = 0; i < NPROC; i++){
+      tt += ss.turnaround[i];
+    }
+    return tt;
+  }
+  else if(n == 4){
+    return ss.nprocesses_completed;
+  }
+  return -1;
 }

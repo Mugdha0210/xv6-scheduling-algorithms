@@ -5,10 +5,9 @@
 int main(int argc, char *argv[]) {
   int x, z;
 
-  for(z = 1; z < 2200; z++){
-    x = 0;
-    x = x + 12345 * 12345; 
+  for(z = 1; z < 220; z++){
+    x = x + 123 * 123; 
   }
-
+  printf(1, "util2 calling exit\n");
   exit();
 }

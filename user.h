@@ -1,6 +1,6 @@
 struct stat;
 struct rtcdate;
-
+struct sched_stats;
 // system calls
 int fork(void);
 int exit(void) __attribute__((noreturn));
@@ -23,6 +23,7 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int getStats(int);
 
 // ulib.c
 int stat(const char*, struct stat*);
