@@ -1,6 +1,6 @@
 #include "types.h"
 #include "defs.h"
-#include "param.h"
+#include "pstat.h"
 #include "memlayout.h"
 #include "mmu.h"
 #include "x86.h"
@@ -275,8 +275,8 @@ fork(void)
     np->queue_no = 1;
   }
   else{
-    // np->queue_no = (pid % 3) + 1;
-    np->queue_no = 3;
+    np->queue_no = (pid % 3) + 1;
+    //np->queue_no = 3;
   }
   np->state = RUNNABLE;
   np->start_ticks = ticks;
