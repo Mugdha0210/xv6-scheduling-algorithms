@@ -368,7 +368,6 @@ preempt(void)
       ;
   }
     
-  printf(1, "2\n");
   pid2 = fork();
   if(pid2 == 0){
     for(;;)
@@ -397,9 +396,7 @@ preempt(void)
   kill(pid3);
   printf(1, "wait... ");
   wait();
-  printf(1, "wait after 1... ");
   wait();
-  printf(1, "wait after 2... ");
   wait();
   printf(1, "preempt ok\n");
 }
@@ -1785,7 +1782,7 @@ main(int argc, char *argv[])
 
   mem();
   pipe1();
-  //preempt();
+  preempt();
   exitwait();
 
   rmdot();

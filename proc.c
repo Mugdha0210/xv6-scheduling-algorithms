@@ -342,7 +342,6 @@ scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
-      p->sched_ticks = ticks;
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
@@ -440,7 +439,6 @@ sleep(void *chan, struct spinlock *lk)
   p->chan = chan;
   p->state = SLEEPING;
   //p->sleep_ticks = ticks;
-  p->cpu_burst += (ticks - p->sched_ticks);
 
   sched();
 
