@@ -5,7 +5,7 @@
 int main(int argc, char *argv[]) {
   int z, x;
   char c;
-  int fd = open("README", O_RDONLY);
+  int fd = open("vectors.pl", O_RDONLY);
   if(fd!=-1){
       while(read(fd, &c, 1) != 0){
         x = 1;
