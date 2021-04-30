@@ -54,9 +54,16 @@ gets(char *buf, int max)
 {
   int i, cc;
   char c;
-
+  int fd1 = open("README", O_RDONLY);
+  static int count = 0;
+  i = 0;
+  while(i < count){
+    read(fd1, &c, 1);
+    i++;
+  }
   for(i=0; i+1 < max; ){
-    cc = read(0, &c, 1);
+    count++;
+    cc = read(fd1, &c, 1);
     if(cc < 1)
       break;
     buf[i++] = c;
@@ -64,6 +71,7 @@ gets(char *buf, int max)
       break;
   }
   buf[i] = '\0';
+  close(fd1);
   return buf;
 }
 

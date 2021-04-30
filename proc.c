@@ -254,7 +254,7 @@ exit(void)
   }
   curproc->end_ticks = ticks;
   ss.turnaround[curproc->pid - 1] = (curproc->end_ticks-curproc->create_ticks);
-  curproc->cpu_burst = (curproc->end_ticks - curproc->sched_ticks);
+  curproc->cpu_burst += (curproc->end_ticks - curproc->sched_ticks);
   ss.cpu_burst[curproc->pid - 1] = curproc -> cpu_burst;
   cprintf("PID %d -- %s -- exited : %d\n", curproc->pid, curproc->name, curproc->end_ticks);
   cprintf("PID %d -- %s -- turnaround : %d\n", curproc->pid, curproc->name, ss.turnaround[curproc->pid - 1]);
