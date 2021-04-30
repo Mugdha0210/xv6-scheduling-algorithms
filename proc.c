@@ -77,13 +77,13 @@ allocproc(void)
 {
   struct proc *p;
   char *sp;
-  int i = 0;
+  int i = -1;
   acquire(&ptable.lock);
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    i++;
     if(p->state == UNUSED)
       goto found;
-    i++;
   }
 
   release(&ptable.lock);
@@ -95,8 +95,6 @@ found:
   p->sched_ticks = 0;
   p->end_ticks = 0;
   p->cpu_burst = 0;
-  p->index = i;
-
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -255,12 +253,12 @@ exit(void)
     }
   }
   curproc->end_ticks = ticks;
-  ss.turnaround[curproc->index] = (curproc->end_ticks-curproc->create_ticks);
+  ss.turnaround[curproc->pid - 1] = (curproc->end_ticks-curproc->create_ticks);
   curproc->cpu_burst = (curproc->end_ticks - curproc->sched_ticks);
-  ss.cpu_burst[curproc->index] = curproc -> cpu_burst;
+  ss.cpu_burst[curproc->pid - 1] = curproc -> cpu_burst;
   cprintf("PID %d -- %s -- exited : %d\n", curproc->pid, curproc->name, curproc->end_ticks);
-  cprintf("PID %d -- %s -- turnaround : %d\n", curproc->pid, curproc->name, ss.turnaround[curproc->index]);
-  cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, ss.cpu_burst[curproc->index]);
+  cprintf("PID %d -- %s -- turnaround : %d\n", curproc->pid, curproc->name, ss.turnaround[curproc->pid - 1]);
+  cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, ss.cpu_burst[curproc->pid - 1]);
   cprintf("PID: %d\tNAME: %s\tLapsed ticks: %d\n", curproc->pid, curproc->name, (curproc->end_ticks - curproc->create_ticks));
   if(ss.max_CT < curproc->end_ticks)
     ss.max_CT = curproc->end_ticks;
@@ -286,6 +284,11 @@ exit(void)
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
   ss.nprocesses_completed += 1;
+  // int cpu_burst = getStats(1);
+  // int duration = getStats(2);
+  // int proc_comp = getStats(4);
+  // int tt = getStats(3);
+  // cprintf("cpu utilisation: %d/%d\t, throughput: %d/%d\t, turnaround: %d\n", cpu_burst, duration, proc_comp, duration, tt);
   sched();
   panic("zombie exit");
 }
@@ -576,6 +579,7 @@ int getStats(int n){
   if(n == 1){
     for(i = 0; i < NPROC; i++){
         cpu_burst += ss.cpu_burst[i];
+        // cprintf("i: %d\tcpu_burst: %d\n",i, ss.cpu_burst[i]);
     }
     return (cpu_burst);
   }
@@ -585,6 +589,7 @@ int getStats(int n){
   else if(n == 3){
     for(i = 0; i < NPROC; i++){
       tt += ss.turnaround[i];
+      // cprintf("i: %d\ttt: %d\n",i, ss.turnaround[i]);
     }
     return tt;
   }
