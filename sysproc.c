@@ -103,3 +103,11 @@ int sys_getStats(void)
     return -1;
   return getStats(n);
 }
+
+//Ref: https://medium.com/@silvamatteus/adding-new-system-calls-to-xv6-217b7daefbe1
+int
+sys_halt(void)
+{
+  outb(0xf4, 0x00);
+  return 0;
+}
