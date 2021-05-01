@@ -90,6 +90,7 @@ extern int sys_exit(void);
 extern int sys_fork(void);
 extern int sys_fstat(void);
 extern int sys_getpid(void);
+extern int sys_getStats(void);
 extern int sys_kill(void);
 extern int sys_link(void);
 extern int sys_mkdir(void);
@@ -105,6 +106,7 @@ extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_ps(void);
 extern int sys_chpriority(void);
+extern int sys_halt(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -130,6 +132,8 @@ static int (*syscalls[])(void) = {
 [SYS_close]   sys_close,
 [SYS_ps]      sys_ps,
 [SYS_chpriority] sys_chpriority,
+[SYS_getStats]   sys_getStats,
+[SYS_halt]    sys_halt,
 };
 
 void

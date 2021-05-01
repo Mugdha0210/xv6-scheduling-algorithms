@@ -707,3 +707,7 @@ int chpriority(int pid, int queue_num)
   release(&ptable.lock);
   return pid;
 }
+
+int getStats(int n){
+  return n;
+}

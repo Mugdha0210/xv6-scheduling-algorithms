@@ -25,6 +25,8 @@ int sleep(int);
 int uptime(void);
 int ps(void);
 int chpriority(int pid, int priority);
+int getStats(int);
+int halt(void);
 
 
 // ulib.c
