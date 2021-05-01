@@ -64,9 +64,9 @@ lapicinit(void)
   // from lapic[TICR] and then issues an interrupt.
   // If xv6 cared more about precise timekeeping,
   // TICR would be calibrated using an external time source.
-  lapicw(TDCR, X1);
-  lapicw(TIMER, PERIODIC | (T_IRQ0 + IRQ_TIMER));
-  lapicw(TICR, 10000000);
+  //lapicw(TDCR, X1);
+  //lapicw(TIMER, PERIODIC | (T_IRQ0 + IRQ_TIMER));
+  //lapicw(TICR, 10000000);
   //lapicw(TICR, 1000000);
 
   // Disable logical interrupt lines.
@@ -232,5 +232,5 @@ cmostime(struct rtcdate *r)
 int get_time_in_sec(void){
   struct rtcdate t1;
   cmostime(&t1);
-  return t1.second;
+  return t1.hour*3600 + t1.minute*60 + t1.second;
 }

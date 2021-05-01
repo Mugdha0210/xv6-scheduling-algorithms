@@ -129,6 +129,13 @@ userinit(void)
   struct proc *p;
   extern char _binary_initcode_start[], _binary_initcode_size[];
 
+  ss.nprocesses_scheduled = 0;
+  ss.nprocesses_completed = 0;
+  ss.cpu_burst[0] = 0;
+  ss.turnaround[0] = 0;
+  ss.min_AT = 10000000;
+  ss.max_CT = 0;
+
   p = allocproc();
   
   initproc = p;
@@ -222,12 +229,12 @@ fork(void)
 
   np->state = RUNNABLE;
   np->first = 1;
-  np->create_ticks = ticks;
+  np->create_ticks = get_time_in_sec();
   if(ss.min_AT > np->create_ticks)
     ss.min_AT = np->create_ticks;
-  cprintf("PID %d -- %s -- came : %d\n", np->pid, np->name, ticks);
-  int sec = get_time_in_sec();
-  cprintf("PID %d -- %s -- came(sec) : %d\n", np->pid, np->name, sec);
+  //cprintf("PID %d -- %s -- came : %d\n", np->pid, np->name, get_time_in_sec());
+  //int sec = get_time_in_sec();
+  //cprintf("PID %d -- %s -- came(sec) : %d\n", np->pid, np->name, sec);
 
   release(&ptable.lock);
 
@@ -254,16 +261,17 @@ exit(void)
       curproc->ofile[fd] = 0;
     }
   }
-  curproc->end_ticks = ticks;
+  curproc->end_ticks = get_time_in_sec();
   ss.turnaround[curproc->pid - 1] = (curproc->end_ticks-curproc->create_ticks);
   curproc->cpu_burst += (curproc->end_ticks - curproc->sched_ticks);
   ss.cpu_burst[curproc->pid - 1] = curproc -> cpu_burst;
-  cprintf("PID %d -- %s -- exited : %d\n", curproc->pid, curproc->name, curproc->end_ticks);
-  int sec = get_time_in_sec();
-  cprintf("PID %d -- %s -- exited(sec) : %d\n", curproc->pid, curproc->name, sec);
+  //cprintf("PID %d -- %s -- exited : %d\n", curproc->pid, curproc->name, curproc->end_ticks);
+  //int sec = get_time_in_sec();
+  //cprintf("PID %d -- %s -- exited(sec) : %d\n", curproc->pid, curproc->name, sec);
   cprintf("PID %d -- %s -- turnaround : %d\n", curproc->pid, curproc->name, ss.turnaround[curproc->pid - 1]);
-  cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, ss.cpu_burst[curproc->pid - 1]);
-  cprintf("PID: %d\tNAME: %s\tLapsed ticks: %d\n", curproc->pid, curproc->name, (curproc->end_ticks - curproc->create_ticks));
+  //cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, ss.cpu_burst[curproc->pid - 1]);
+  cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, curproc->cpu_burst);
+  //cprintf("PID: %d\tNAME: %s\tLapsed ticks: %d\n", curproc->pid, curproc->name, (curproc->end_ticks - curproc->create_ticks));
   if(ss.max_CT < curproc->end_ticks)
     ss.max_CT = curproc->end_ticks;
   begin_op();
@@ -372,7 +380,7 @@ scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
-      p->sched_ticks = ticks;
+      p->sched_ticks = get_time_in_sec();
       if(p->first == 1){
         p->first = 0;
         ss.nprocesses_scheduled += 1;
@@ -431,9 +439,9 @@ void
 forkret(void)
 {
   static int first = 1;
-  cprintf("PID %d -- %s -- served : %d\n", myproc()->pid, myproc()->name, ticks);
-  int sec = get_time_in_sec();
-  cprintf("PID %d -- %s -- served(sec) : %d\n", myproc()->pid, myproc()->name, sec);
+  //cprintf("PID %d -- %s -- served : %d\n", myproc()->pid, myproc()->name, ticks);
+  //int sec = get_time_in_sec();
+  //cprintf("PID %d -- %s -- served(sec) : %d\n", myproc()->pid, myproc()->name, sec);
   // Still holding ptable.lock from scheduler.
   release(&ptable.lock);
 
@@ -475,8 +483,9 @@ sleep(void *chan, struct spinlock *lk)
   // Go to sleep.
   p->chan = chan;
   p->state = SLEEPING;
-  //p->sleep_ticks = ticks;
-  p->cpu_burst += (ticks - p->sched_ticks);
+  //p->sleep_ticks = get_time_in_sec();
+  p->cpu_burst += (get_time_in_sec() - p->sched_ticks);
+  cprintf("HERE -- %d\n", p->chan);
 
   sched();
 
