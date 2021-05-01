@@ -81,6 +81,7 @@ void            lapiceoi(void);
 void            lapicinit(void);
 void            lapicstartap(uchar, uint);
 void            microdelay(int);
+int             get_time_in_sec(void);
 
 // log.c
 void            initlog(int dev);
@@ -121,7 +122,7 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 int             getStats(int);
-// void            yield(void);
+void            yield(void);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

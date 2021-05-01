@@ -226,6 +226,8 @@ fork(void)
   if(ss.min_AT > np->create_ticks)
     ss.min_AT = np->create_ticks;
   cprintf("PID %d -- %s -- came : %d\n", np->pid, np->name, ticks);
+  int sec = get_time_in_sec();
+  cprintf("PID %d -- %s -- came(sec) : %d\n", np->pid, np->name, sec);
 
   release(&ptable.lock);
 
@@ -257,6 +259,8 @@ exit(void)
   curproc->cpu_burst += (curproc->end_ticks - curproc->sched_ticks);
   ss.cpu_burst[curproc->pid - 1] = curproc -> cpu_burst;
   cprintf("PID %d -- %s -- exited : %d\n", curproc->pid, curproc->name, curproc->end_ticks);
+  int sec = get_time_in_sec();
+  cprintf("PID %d -- %s -- exited(sec) : %d\n", curproc->pid, curproc->name, sec);
   cprintf("PID %d -- %s -- turnaround : %d\n", curproc->pid, curproc->name, ss.turnaround[curproc->pid - 1]);
   cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, ss.cpu_burst[curproc->pid - 1]);
   cprintf("PID: %d\tNAME: %s\tLapsed ticks: %d\n", curproc->pid, curproc->name, (curproc->end_ticks - curproc->create_ticks));
@@ -412,14 +416,14 @@ sched(void)
 }
 
 // Give up the CPU for one scheduling round.
-// void
-// yield(void)
-// {
-//   acquire(&ptable.lock);  //DOC: yieldlock
-//   myproc()->state = RUNNABLE;
-//   sched();
-//   release(&ptable.lock);
-// }
+void
+yield(void)
+{
+  acquire(&ptable.lock);  //DOC: yieldlock
+  myproc()->state = RUNNABLE;
+  sched();
+  release(&ptable.lock);
+}
 
 // A fork child's very first scheduling by scheduler()
 // will swtch here.  "Return" to user space.
@@ -428,6 +432,8 @@ forkret(void)
 {
   static int first = 1;
   cprintf("PID %d -- %s -- served : %d\n", myproc()->pid, myproc()->name, ticks);
+  int sec = get_time_in_sec();
+  cprintf("PID %d -- %s -- served(sec) : %d\n", myproc()->pid, myproc()->name, sec);
   // Still holding ptable.lock from scheduler.
   release(&ptable.lock);
 
