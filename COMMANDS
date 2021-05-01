@@ -1,4 +1,4 @@
-util
-util2
-ls
+utilTimed 10
+utilTimed 20
+utilTimed 40
 pstat

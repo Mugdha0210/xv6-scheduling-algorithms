@@ -5,9 +5,15 @@
 
 int main(int argc, char *argv[]) {
   int x, start, now;
+
+  if(argc != 2){
+    printf(1, "Usage: utilTimed <CPU burst time>\n");
+    exit();
+  }
+
+  //run for argv[1] sec
   //seconds = (end_ticks - start_ticks) / 100
-  //run for 10sec
-  int runtime = 1000;
+  int runtime = atoi(argv[1]) * 100;
 
   start = uptime();
 
@@ -21,6 +27,5 @@ int main(int argc, char *argv[]) {
     x = x + 123 * 123; 
   }
 
-  printf(1, "util40 calling exit\n");
   exit();
 }

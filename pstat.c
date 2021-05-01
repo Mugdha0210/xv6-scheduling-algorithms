@@ -28,7 +28,7 @@ int main(int argc, char *argv[]){
         int duration = getStats(2);
         int proc_comp = getStats(4);
         int tt = getStats(3);
-        printf(1, "cpu utilisation: %d/%d\t, throughput: %d/%d\t, turnaround: %d\n", cpu_burst, tt, proc_comp, duration, tt);
+        printf(1, "cpu utilisation: %d\%\t, 1/throughput: %d\t, turnaround: %d\n", cpu_burst*100/tt, duration/proc_comp, tt);
     // }
     // else{
     //     util();

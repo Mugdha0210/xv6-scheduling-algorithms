@@ -183,7 +183,7 @@ UPROGS=\
 	_usertests\
 	_util\
 	_util2\
-	_util40\
+	_utilTimed\
 	_wc\
 	_zombie\
 
