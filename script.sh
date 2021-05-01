@@ -1,5 +1,11 @@
 #!/bin/bash
-
+echo " "
+echo " "
+echo "        ------------        FIRST COME FIRST SERVE        ----------"
+echo " "
+git checkout multilevel-feedback-queue
+make qemu
+echo " "
 echo " "
 echo "        ------------        PRIORITY SCHEDULING        ------------"
 echo " "

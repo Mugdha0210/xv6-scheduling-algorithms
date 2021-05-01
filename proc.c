@@ -15,7 +15,7 @@ struct {
 
 int c1 = 0, c2 = 0, c3 = 0;
 static struct proc *initproc;
-int yieldcount = 0;
+// int yieldcount = 0;
 int nextpid = 1;
 extern void forkret(void);
 extern void trapret(void);
@@ -283,7 +283,7 @@ exit(void)
 
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
-  cprintf("yieldcount = %d\n", yieldcount);
+  cprintf("yieldcount = %d\n", curproc->yield_count);
   cprintf("lapsed ticks = %d\n", ticks - curproc->start_ticks);
   sched();
   panic("zombie exit");
@@ -471,14 +471,16 @@ yield(void)
     // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\trun ticks: %d\n", p->pid, p->name, p->queue_no, ticks);
   }
   else{
-    if(p->yield_count < 5)
+    if(p->yield_count < TICKS_LIMIT)
       p->yield_count++;
     else{
       p->queue_no = 1;
       p->proc_no = c1++;
+      p->yield_count = 0;
+      cprintf("moved to q1 from q3\n");
     }
   }
-  yieldcount++;
+  // yieldcount++;
   sched();
 
   
