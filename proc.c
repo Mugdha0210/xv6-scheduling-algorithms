@@ -643,3 +643,7 @@ int chpriority(int pid, int priority)
 
   return pid;
 }
+
+int getStats(int n){
+  return n;
+}
