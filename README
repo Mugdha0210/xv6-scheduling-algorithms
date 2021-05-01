@@ -1,7 +1,5 @@
-util
-util2
-wc README
-ls
-util40
-pstat
-halt
+utilTimed 10;
+utilTimed 20;
+utilTimed 40;
+pstat;
+halt;
