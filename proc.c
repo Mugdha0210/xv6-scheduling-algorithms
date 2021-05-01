@@ -88,6 +88,10 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->exec_count = 0;
+  p->sched_ticks = 0;
+  p->yield_ticks = 0;
+  p->exit_ticks = 0;
 
   release(&ptable.lock);
 
@@ -149,6 +153,7 @@ userinit(void)
   acquire(&ptable.lock);
 
   p->state = RUNNABLE;
+  p->priority = 1;
 
   release(&ptable.lock);
 }
@@ -215,6 +220,8 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
+  np->priority = curproc->priority;
+  np->start_ticks = ticks;
 
   release(&ptable.lock);
 
@@ -228,8 +235,12 @@ void
 exit(void)
 {
   struct proc *curproc = myproc();
-  struct proc *p;
+  struct proc *p, *p1;
   int fd;
+
+  p1 = curproc;
+  p1->exit_ticks = ticks;
+  cprintf("%s\t PID: %d\t EC: %d\t PR: %d\t RT: %d\n", p1->name, p1->pid, p1->exec_count, p1->priority, p1->exit_ticks-p1->start_ticks);
 
   if(curproc == initproc)
     panic("init exiting");
@@ -263,6 +274,7 @@ exit(void)
 
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
+
   sched();
   panic("zombie exit");
 }
@@ -322,10 +334,22 @@ wait(void)
 void
 scheduler(void)
 {
-  struct proc *p;
+  struct proc *p, *p1;
+  struct proc *choice;
   struct cpu *c = mycpu();
   c->proc = 0;
+  int min_count, high_priority;
+  int time_slice;
   
+  //static char *states[] = {
+  //[UNUSED]    "unused",
+  //[EMBRYO]    "embryo",
+  //[SLEEPING]  "sleep ",
+  //[RUNNABLE]  "runble",
+  //[RUNNING]   "run   ",
+  //[ZOMBIE]    "zombie"
+  //};
+
   for(;;){
     // Enable interrupts on this processor.
     sti();
@@ -336,12 +360,41 @@ scheduler(void)
       if(p->state != RUNNABLE)
         continue;
 
+      min_count = 10000000;
+      high_priority = 10000000;
+      choice = 0;
+
+      for(p1 = ptable.proc; p1 < &ptable.proc[NPROC]; p1++){
+        if(p1->state != RUNNABLE)
+          continue;
+        if(p1->exec_count < min_count){
+          min_count = p1->exec_count;
+          high_priority = p1->priority;
+          choice = p1;
+        } 
+        if(p1->exec_count == min_count){
+          if(p1->priority < high_priority){
+            high_priority = p1->priority;
+            choice = p1;
+          }
+        }
+        else
+          continue;
+      }
+
+      p = choice;
+
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+
+      time_slice = 100000000 * (20 - (p->priority));
+      modify_TICR(time_slice);
+
+      p->sched_ticks = ticks;
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
@@ -386,7 +439,13 @@ void
 yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
+  struct proc* p = myproc();
+  myproc()->exec_count++;
+  //myproc()->yield_ticks = ticks;
   myproc()->state = RUNNABLE;
+  cprintf("%s %d yielded\n", p->name, p->pid);
+  //cprintf("PID: %d\t EC: %d\t PR: %d\t RT: %d\n", p->pid, p->exec_count, p->priority, p->yield_ticks-p->sched_ticks);
+
   sched();
   release(&ptable.lock);
 }
@@ -531,4 +590,56 @@ procdump(void)
     }
     cprintf("\n");
   }
+}
+
+/*
+Ref:
+https://medium.com/@harshalshree03/xv6-implementing-ps-nice-system-calls-and-priority-scheduling-b12fa10494e4
+*/
+int ps()
+{
+  struct proc *p;
+  //Enables interrupts on this processor.
+  sti();
+
+  //Loop over process table looking for process with pid.
+  acquire(&ptable.lock);
+  cprintf("name \t pid \t state \t priority \t exec_count\n");
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if (p->state == SLEEPING)
+      cprintf("%s \t %d \t SLEEPING \t %d \t %d\n ", p->name, p->pid, p->priority, p->exec_count);
+    else if (p->state == RUNNING)
+      cprintf("%s \t %d \t RUNNING \t %d \t %d\n ", p->name, p->pid, p->priority, p->exec_count);
+    else if (p->state == RUNNABLE)
+      cprintf("%s \t %d \t RUNNABLE \t %d \t %d\n ", p->name, p->pid, p->priority, p->exec_count);
+  }
+  release(&ptable.lock);
+  return 22;
+}
+
+/*
+Ref:
+https://medium.com/@harshalshree03/xv6-implementing-ps-nice-system-calls-and-priority-scheduling-b12fa10494e4
+*/
+int chpriority(int pid, int priority)
+{
+  struct proc *p;
+  int flag = 0;
+  //Enables interrupts on this processor.
+  sti();
+
+  acquire(&ptable.lock);
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if (p->pid == pid){
+      p->priority = priority;
+      flag = 1;
+      break;
+    }
+  }
+  release(&ptable.lock);
+
+  if (flag == 0)
+    cprintf("No process with PID %d\n", pid);
+
+  return pid;
 }

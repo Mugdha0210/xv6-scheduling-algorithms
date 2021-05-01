@@ -175,10 +175,13 @@ UPROGS=\
 	_ln\
 	_ls\
 	_mkdir\
+        _nice\
+        _ps\
 	_rm\
 	_sh\
 	_stressfs\
 	_usertests\
+        _util\
 	_wc\
 	_zombie\
 

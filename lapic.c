@@ -10,6 +10,8 @@
 #include "mmu.h"
 #include "x86.h"
 
+#define MAX_SLICE 0xffffffff
+
 // Local APIC registers, divided by 4 for use as uint[] indices.
 #define ID      (0x0020/4)   // ID
 #define VER     (0x0030/4)   // Version
@@ -66,7 +68,7 @@ lapicinit(void)
   // TICR would be calibrated using an external time source.
   lapicw(TDCR, X1);
   lapicw(TIMER, PERIODIC | (T_IRQ0 + IRQ_TIMER));
-  lapicw(TICR, 10000000);
+  //lapicw(TICR, 10000000);
 
   // Disable logical interrupt lines.
   lapicw(LINT0, MASKED);
@@ -226,4 +228,12 @@ cmostime(struct rtcdate *r)
 
   *r = t1;
   r->year += 2000;
+}
+
+void modify_TICR(int ts)
+{
+  if(ts > MAX_SLICE)
+    lapicw(TICR, MAX_SLICE);
+  else
+    lapicw(TICR, ts);
 }
