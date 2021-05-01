@@ -651,3 +651,7 @@ procdump(void)
     cprintf("\n");
   }
 }
+
+int getStats(int n){
+  return n;
+}

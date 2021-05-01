@@ -122,7 +122,7 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
-// int             ps(void);
+int             getStats(int);
 // int             chpriority(int pid, int priority);
 
 

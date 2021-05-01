@@ -91,18 +91,25 @@ sys_uptime(void)
   return xticks;
 }
 
-// int sys_ps(void)
-// {
-//   return ps();
-// }
 
-// int sys_chpriority(void)
-// {
-//   int pid, pr;
-//   if (argint(0, &pid) < 0)
-//     return -1;
-//   if (argint(1, &pr) < 0)
-//     return -1;
+int sys_getStats(void)
+{
+ // struct sched_stats *stats = (struct sched_stats *)malloc(sizeof(stats));
+  // if(argptr(0, &stats, sizeof(stats)) < 0)
+  //   return -1;
+  int n;
+  //n = 1: CPU utilisation
+  //n = 2: Throughput
+  //n = 3: Turnaround time
+  if(argint(0, &n) < 0)
+    return -1;
+  return getStats(n);
+}
 
-//   return chpriority(pid, pr);
-// }
+//Ref: https://medium.com/@silvamatteus/adding-new-system-calls-to-xv6-217b7daefbe1
+int
+sys_halt(void)
+{
+  outb(0xf4, 0x00);
+  return 0;
+}
