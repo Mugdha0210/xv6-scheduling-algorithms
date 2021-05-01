@@ -14,6 +14,9 @@ struct {
 
 static struct proc *initproc;
 
+
+struct sched_stats ss;
+
 int nextpid = 1;
 extern void forkret(void);
 extern void trapret(void);
@@ -645,5 +648,34 @@ int chpriority(int pid, int priority)
 }
 
 int getStats(int n){
-  return n;
+  //n = 1: CPU utilisation
+  //n = 2: Throughput
+  //n = 3: Turnaround time
+
+  //n = 1: CPU burst
+  //n = 2: duration
+  //n = 3: Turnaround time
+  //n = 4: nprocesscomp
+  int i = 0, cpu_burst = 0, tt = 0;
+  if(n == 1){
+    for(i = 0; i < NPROC; i++){
+        cpu_burst += ss.cpu_burst[i];
+        // cprintf("i: %d\tcpu_burst: %d\n",i, ss.cpu_burst[i]);
+    }
+    return (cpu_burst);
+  }
+  else if(n == 2){
+    return (ss.max_CT - ss.min_AT);
+  }
+  else if(n == 3){
+    for(i = 0; i < NPROC; i++){
+      tt += ss.turnaround[i];
+      // cprintf("i: %d\ttt: %d\n",i, ss.turnaround[i]);
+    }
+    return tt;
+  }
+  else if(n == 4){
+    return ss.nprocesses_completed;
+  }
+  return -1;
 }
