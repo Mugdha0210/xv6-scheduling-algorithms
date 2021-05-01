@@ -1,6 +1,6 @@
 #include "types.h"
 #include "defs.h"
-#include "pstat.h"
+#include "param.h"
 #include "memlayout.h"
 #include "mmu.h"
 #include "x86.h"
@@ -12,6 +12,7 @@ struct {
   struct proc proc[NPROC];
 } ptable;
 
+struct sched_stats ss;
 // int s1 = 0, e1 = 20, c1 = 0, s2 = 21, e2 = 41, c2 = 0, s3 = 42, e3 = 63, c3 = 0;
 
 // struct queue q1, q2, q3;
@@ -144,6 +145,9 @@ found:
   //   p->queue_no = 3;
   // }
   p->queue_no = 1;
+  p->sched_ticks = 0;
+  p->end_ticks = 0;
+  p->cpu_burst = 0;
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -178,6 +182,11 @@ userinit(void)
   cprintf("in userinit\n");
   struct proc *p;
   extern char _binary_initcode_start[], _binary_initcode_size[];
+
+  ss.nprocesses_scheduled = 0;
+  ss.nprocesses_completed = 0;
+  ss.min_AT = get_time_in_sec();
+  ss.max_CT = 0;
 
   p = allocproc();
   
@@ -279,9 +288,12 @@ fork(void)
     //np->queue_no = 3;
   }
   np->state = RUNNABLE;
-  np->start_ticks = ticks;
   np->yield_count = 0;
-  cprintf("PID: %d\tNAME: %s\tQUEUE: %d\tstart ticks: %d\n", np->pid, np->name, np->queue_no, np->start_ticks);
+  np->first = 1;
+  np->create_ticks = get_time_in_sec();
+  if(ss.min_AT > np->create_ticks)
+    ss.min_AT = np->create_ticks;
+  // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\tstart ticks: %d\n", np->pid, np->name, np->queue_no, np->start_ticks);
   release(&ptable.lock);
 
   return pid;
@@ -295,7 +307,7 @@ exit(void)
 {
   
   struct proc *curproc = myproc();
-  cprintf("PID: %d\tNAME: %s\tQUEUE: %d\tend ticks: %d\n", curproc->pid, curproc->name, curproc->queue_no, ticks);
+  // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\tend ticks: %d\n", curproc->pid, curproc->name, curproc->queue_no, ticks);
   struct proc *p;
   int fd;
 
@@ -309,6 +321,15 @@ exit(void)
       curproc->ofile[fd] = 0;
     }
   }
+  ss.nprocesses_completed += 1;
+  curproc->end_ticks = get_time_in_sec();
+  ss.turnaround[curproc->pid - 1] = (curproc->end_ticks-curproc->create_ticks);
+  curproc->cpu_burst += (curproc->end_ticks - curproc->sched_ticks);
+  ss.cpu_burst[curproc->pid - 1] = curproc -> cpu_burst;
+  cprintf("PID %d -- %s -- turnaround : %d\n", curproc->pid, curproc->name, ss.turnaround[curproc->pid - 1]);
+  cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, curproc->cpu_burst);
+  if(ss.max_CT < curproc->end_ticks)
+    ss.max_CT = curproc->end_ticks;
 
   begin_op();
   iput(curproc->cwd);
@@ -332,7 +353,7 @@ exit(void)
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
   cprintf("yieldcount = %d\n", yieldcount);
-  cprintf("lapsed ticks = %d\n", ticks - curproc->start_ticks);
+  // cprintf("lapsed ticks = %d\n", ticks - curproc->start_ticks);
   sched();
   panic("zombie exit");
 }
@@ -447,6 +468,13 @@ scheduler(void)
         modify_TICR(TIME_Q2);
       else if(p->queue_no == 3)
         modify_TICR(TIME_Q3);
+
+      p->sched_ticks = get_time_in_sec();
+      if(p->first == 1){
+        p->first = 0;
+        ss.nprocesses_scheduled += 1;
+      }
+      // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\tmoving to switch at %d secs\n", p->pid, p->name, p->queue_no, p->sched_ticks);
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -496,7 +524,8 @@ yield(void)
   p->state = RUNNABLE;
   // cprintf("calling sched from yield\n");
   p->yield_count++;
-  p->run_ticks = ticks;
+      // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\tbefore sched in yield %d secs\n", p->pid, p->name, p->queue_no, p->sched_ticks);
+
   sched();
   yieldcount++;
   
@@ -554,11 +583,9 @@ sleep(void *chan, struct spinlock *lk)
   // Go to sleep.
   p->chan = chan;
   p->state = SLEEPING;
-//  if(p->queue_number == 2){
-//     dequeue(&q2);
-//   }
-  
-  // cprintf("calling sched from sleep\n");
+  int x = get_time_in_sec();
+  p->cpu_burst += (x - p->sched_ticks);
+  cprintf("cpu_burst in sleep: %d sec\n", p->cpu_burst);
   sched();
 
   // Tidy up.
@@ -708,6 +735,38 @@ int chpriority(int pid, int queue_num)
   return pid;
 }
 
+
 int getStats(int n){
-  return n;
+  //n = 1: CPU utilisation
+  //n = 2: Throughput
+  //n = 3: Turnaround time
+
+  //n = 1: CPU burst
+  //n = 2: duration
+  //n = 3: Turnaround time
+  //n = 4: nprocesscomp
+  int i = 0, cpu_burst = 0, tt = 0;
+  if(n == 1){
+    for(i = 0; i < NPROC; i++){
+        cpu_burst += ss.cpu_burst[i];
+        cprintf("i: %d\tcpu_burst: %d\n",i, ss.cpu_burst[i]);
+    }
+    cprintf("cpu_burst is %d\n", cpu_burst);
+    return (cpu_burst);
+  }
+  else if(n == 2){
+    return (ss.max_CT - ss.min_AT);
+  }
+  else if(n == 3){
+    for(i = 0; i < NPROC; i++){
+      tt += ss.turnaround[i];
+      cprintf("i: %d\ttt: %d\n",i, ss.turnaround[i]);
+    }
+    cprintf("tt is %d\n", tt);
+    return tt;
+  }
+  else if(n == 4){
+    return ss.nprocesses_completed;
+  }
+  return -1;
 }

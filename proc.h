@@ -50,11 +50,11 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
-  int priority;                // priority of the process
   int queue_no;                //1, 2, 3
-  int start_ticks;
-  int run_ticks;
+  int create_ticks;
+  int sched_ticks;
   int end_ticks;
+  int cpu_burst;
   int first;
   int yield_count;
 };
@@ -71,6 +71,16 @@ struct proc {
 //   int end;
 //   int count;
 // };
+struct sched_stats{
+    int nprocesses_scheduled;           //num of processes scheduled -- updated in scheduler
+    //int completion_time;                    //
+    int nprocesses_completed;           //num of processes completed -- updated in exit (not sure if needed if no infinite process)
+    int cpu_burst[NPROC];               //updated before wait and in exit
+    int turnaround[NPROC];              //update in exit
+    int min_AT;                         //min arrival time, update in fork() if not the min
+    int max_CT;                         //max completion time, update in exit() if not the max
+};
+
 
 #define TIME_Q1 10000000
 #define TIME_Q2 5000000
