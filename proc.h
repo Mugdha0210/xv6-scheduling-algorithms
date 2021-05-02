@@ -79,9 +79,9 @@ struct proc {
 //   int count;
 // };
 
-#define TIME_Q1 5000000
-#define TIME_Q2 10000000
-#define TIME_Q3 20000000
+#define TIME_Q1 10000000
+#define TIME_Q2 20000000
+#define TIME_Q3 30000000
 
 #define TICKS_LIMIT 5
 

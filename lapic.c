@@ -231,4 +231,9 @@ cmostime(struct rtcdate *r)
 void modify_TICR(int a)
 {
   lapicw(TICR, a);
+  // cprintf("ticr modified is: %d\n", lapic[TICR]);
+}
+
+int get_current_TICR(void){
+  return lapic[TICR];
 }

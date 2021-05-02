@@ -438,8 +438,10 @@ scheduler(void)
 
       switchuvm(p);
       p->state = RUNNING;
-      if(p->queue_no == 1)
+      if(p->queue_no == 1){
         modify_TICR(TIME_Q1);
+        // cprintf("modified TICR");
+      }
       else if(p->queue_no == 2)
         modify_TICR(TIME_Q2);
       else if(p->queue_no == 3)
