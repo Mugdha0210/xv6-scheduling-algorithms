@@ -7,9 +7,9 @@
 int main(int argc, char *argv[]) {
   int x;
   int i;
-  //int fd;
-  uint start, cputime, now;
-  //char *buffer = (char*)malloc(sizeof(char)*512);
+  // int fd;
+  uint start, cputime, now, iotime;
+  // char *buffer = (char*)malloc(sizeof(char)*512);
 
   if(argc != 3){
     printf(1, "Usage: utilTimed <CPU burst time> <IO burst time>\n");
@@ -17,9 +17,9 @@ int main(int argc, char *argv[]) {
   }
 
   cputime = atoi(argv[1]);
-//   iotime = atoi(argv[2]);
+  iotime = atoi(argv[2]);
   printf(1, "%d\n", cputime);
-//   printf(1, "%d\n", iotime);
+  printf(1, "%d\n", iotime);
 
   start = uptime();
   while(1){
@@ -40,25 +40,27 @@ int main(int argc, char *argv[]) {
     }
   }
 
-//   start = uptime();
-//   while(1){
-//     now = uptime();
+  
+  // start = uptime();
+  // while(1){
+  //   now = uptime();
 
-//     if((now - start) >= iotime){
-//       printf(1, "diff 2: %d\n", now-start);
-//       break;
-//     }
+  //   if((now - start) >= iotime){
+  //     printf(1, "diff 2: %d\n", now-start);
+  //     break;
+  //   }
 
-//     sleep(0);
-//     //fd = open("README", O_RDONLY);
-//     //if(fd == -1){
-//       //printf(1, "File open failed.\n");
-//       //exit();
-//     //}
-//     //read(fd, buffer, 50);
-//     //printf(1, "%s\n", buffer);
-//     //close(fd);
-//   }
+  x = iotime * 100;
+  sleep(x);
+  //   fd = open("README", O_RDWR);
+  //   if(fd == -1){
+  //     printf(1, "File open failed.\n");
+  //     exit();
+  //   }
+  //   read(fd, buffer, 50);
+  //   printf(fd, "%s\n", buffer);
+  //   close(fd);
+  // }
 
   start = uptime();
   while(1){

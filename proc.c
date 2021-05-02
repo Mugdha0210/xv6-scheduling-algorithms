@@ -148,6 +148,7 @@ found:
   p->sched_ticks = 0;
   p->end_ticks = 0;
   p->cpu_burst = 0;
+  p->wait_for_io = 0;
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -185,7 +186,8 @@ userinit(void)
 
   ss.nprocesses_scheduled = 0;
   ss.nprocesses_completed = 0;
-  ss.min_AT = get_time_in_sec();
+  // ss.min_AT = get_time_in_sec();
+  ss.min_AT = ticks;
   ss.max_CT = 0;
 
   p = allocproc();
@@ -290,7 +292,8 @@ fork(void)
   np->state = RUNNABLE;
   np->yield_count = 0;
   np->first = 1;
-  np->create_ticks = get_time_in_sec();
+  // np->create_ticks = get_time_in_sec();
+  np->create_ticks = ticks;
   if(ss.min_AT > np->create_ticks)
     ss.min_AT = np->create_ticks;
   // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\tstart ticks: %d\n", np->pid, np->name, np->queue_no, np->start_ticks);
@@ -322,12 +325,16 @@ exit(void)
     }
   }
   ss.nprocesses_completed += 1;
-  curproc->end_ticks = get_time_in_sec();
+  // curproc->end_ticks = get_time_in_sec();
+  curproc->end_ticks = ticks;
+  cprintf("PID %d -- %s -- end ticks : %d\n", curproc->pid, curproc->name, curproc->end_ticks);
+  cprintf("PID %d -- %s -- last sched ticks : %d\n", curproc->pid, curproc->name, curproc->sched_ticks);
+  cprintf("PID %d -- %s -- create ticks : %d\n", curproc->pid, curproc->name, curproc->create_ticks);
   ss.turnaround[curproc->pid - 1] = (curproc->end_ticks-curproc->create_ticks);
-  curproc->cpu_burst += (curproc->end_ticks - curproc->sched_ticks);
-  ss.cpu_burst[curproc->pid - 1] = curproc -> cpu_burst;
+  // curproc->cpu_burst += (curproc->end_ticks - curproc->sched_ticks);
+  // ss.cpu_burst[curproc->pid - 1] = curproc -> cpu_burst;
   cprintf("PID %d -- %s -- turnaround : %d\n", curproc->pid, curproc->name, ss.turnaround[curproc->pid - 1]);
-  cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, curproc->cpu_burst);
+  cprintf("PID %d -- %s -- wait for io : %d\n", curproc->pid, curproc->name, curproc->wait_for_io);
   if(ss.max_CT < curproc->end_ticks)
     ss.max_CT = curproc->end_ticks;
 
@@ -469,12 +476,13 @@ scheduler(void)
       else if(p->queue_no == 3)
         modify_TICR(TIME_Q3);
 
-      p->sched_ticks = get_time_in_sec();
+      // p->sched_ticks = get_time_in_sec();
       if(p->first == 1){
         p->first = 0;
         ss.nprocesses_scheduled += 1;
       }
       // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\tmoving to switch at %d secs\n", p->pid, p->name, p->queue_no, p->sched_ticks);
+      p->sched_ticks = ticks;
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -583,9 +591,11 @@ sleep(void *chan, struct spinlock *lk)
   // Go to sleep.
   p->chan = chan;
   p->state = SLEEPING;
-  int x = get_time_in_sec();
-  p->cpu_burst += (x - p->sched_ticks);
-  cprintf("cpu_burst in sleep: %d sec\n", p->cpu_burst);
+  // int x = get_time_in_sec();
+  // int x = ticks;
+  // p->cpu_burst += (x - p->sched_ticks);
+  // cprintf("cpu_burst in sleep: now - %d ticks\tin sched - %d ticks\n", ticks, p->sched_ticks);
+  p->dummy = ticks;
   sched();
 
   // Tidy up.
@@ -609,14 +619,8 @@ wakeup1(void *chan)
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == SLEEPING && p->chan == chan){
       p->state = RUNNABLE;
-      // if((p->priority) >= 0 && (p->priority) <= 6)
-      //   enqueue(&q1, p);
-      // else if((p->priority) >= 7 && (p->priority) <= 13)
-      //   enqueue(&q2, p);
-      // else if((p->priority) >= 14 && (p->priority) <= 20)
-      //   enqueue(&q3, p);
-    }
-      
+      p->wait_for_io += ticks - p->dummy;
+    }  
 }
 
 // Wake up all processes sleeping on chan.
