@@ -192,6 +192,8 @@ fs.img: mkfs README $(UPROGS)
 
 -include *.d
 
+run:
+	./script.sh
 clean: 
 	rm -f *.tex *.dvi *.idx *.aux *.log *.ind *.ilg \
 	*.o *.d *.asm *.sym vectors.S bootblock entryother \
