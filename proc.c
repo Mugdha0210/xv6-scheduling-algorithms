@@ -7,6 +7,8 @@
 #include "proc.h"
 #include "spinlock.h"
 
+int sec = 0;
+
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
@@ -235,7 +237,7 @@ fork(void)
   np->first = 1;
   np->create_ticks = get_time_in_sec();
   if(np->pid == 3)
-    ss.min_AT = np->create_ticks;
+    ss.min_AT = get_time_in_sec();
 
   //if(ss.min_AT > np->create_ticks)
    // ss.min_AT = np->create_ticks;
@@ -284,7 +286,7 @@ exit(void)
   cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, curproc->cpu_burst);
   cprintf("PID %d -- %s -- Lapsed ticks: %d\n", curproc->pid, curproc->name, (curproc->end_ticks - curproc->create_ticks));
   if(ss.max_CT < curproc->end_ticks)
-    ss.max_CT = curproc->end_ticks;
+    ss.max_CT = get_time_in_sec();
   begin_op();
   iput(curproc->cwd);
   end_op();
@@ -528,11 +530,13 @@ static void
 wakeup1(void *chan)
 {
   struct proc *p;
-
+  int x;
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == SLEEPING && p->chan == chan){
       p->state = RUNNABLE;
-      p->wait_for_io += (get_time_in_sec() - p->dummy);
+      x = get_time_in_sec();
+      if(p->dummy < x)
+        p->wait_for_io += (x - p->dummy);
     }
 }
 
