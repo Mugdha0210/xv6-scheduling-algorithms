@@ -59,8 +59,8 @@ struct proc {
   int exec_count;              // U: No. of times process has been scheduled
   int wait_for_io;
   int dummy;
-  int dummy_wait;
-  int dummy_wait2;
+  int ready_wait_flag;
+  int ready_wait_time;
 };
 
 // Process memory is laid out contiguously, low addresses first:

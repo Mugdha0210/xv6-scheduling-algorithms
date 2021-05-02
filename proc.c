@@ -100,8 +100,9 @@ found:
   p->end_ticks = 0;
   p->cpu_burst = 0;
   p->wait_for_io = 0;
-  p->dummy_wait = 0;
-  p->dummy_wait2 = 0;
+  p->ready_wait_flag = 0;
+  p->ready_wait_time = 0;
+  p->dummy = 0;
 
   release(&ptable.lock);
 
@@ -241,8 +242,11 @@ fork(void)
   np->first = 1;
   //np->start_ticks = get_time_in_sec();
   np->start_ticks = ticks;
-  if(ss.min_AT > np->start_ticks)
+  if(np->pid == 3)
     ss.min_AT = np->start_ticks;
+    
+  //if(ss.min_AT > np->start_ticks)
+   // ss.min_AT = np->start_ticks;
   // cprintf("PID: %d\tNAME: %s\tstart ticks: %d\n", np->pid, np->name, np->start_ticks);
 
   release(&ptable.lock);
@@ -276,7 +280,7 @@ exit(void)
   //curproc->end_ticks = get_time_in_sec();
   curproc->end_ticks = ticks;
   ss.turnaround[curproc->pid - 1] = (curproc->end_ticks-curproc->start_ticks);
-  curproc->cpu_burst = ss.turnaround[curproc->pid - 1] - curproc->wait_for_io - curproc->dummy_wait2;
+  curproc->cpu_burst = ss.turnaround[curproc->pid - 1] - curproc->wait_for_io - curproc->ready_wait_time;
   ss.cpu_burst[curproc->pid - 1] = curproc -> cpu_burst;
   cprintf("PID %d -- %s -- turnaround : %d\n", curproc->pid, curproc->name, ss.turnaround[curproc->pid - 1]);
   cprintf("PID %d -- %s -- wait for io : %d\n", curproc->pid, curproc->name, curproc->wait_for_io);
@@ -411,11 +415,16 @@ scheduler(void)
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
       c->proc = p;
+
+      if(p->ready_wait_flag > p->sched_ticks){
+        p->ready_wait_time = p->ready_wait_time + ticks - p->ready_wait_flag;
+      }
+
       switchuvm(p);
       p->state = RUNNING;
 
-      //time_slice = 10000000 * (20 - (p->priority));
-      time_slice = 10000000;
+      time_slice = 10000000 * (20 - (p->priority));
+      //time_slice = 10000000;
       modify_TICR(time_slice);
 
       if(p->first == 1){
@@ -425,9 +434,11 @@ scheduler(void)
       //p->sched_ticks = get_time_in_sec();
       p->sched_ticks = ticks;
 
-      if(p->dummy_wait > 0){
-        p->dummy_wait2 = ticks - p->dummy_wait;
-      }
+      cprintf("**-- PID %d -- %s -- scheduled --**\n", p->pid, p->name);
+
+      //if(p->ready_wait_flag > 0){
+       // p->ready_wait_time = ticks - p->ready_wait_flag;
+      //}
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
@@ -475,7 +486,7 @@ yield(void)
   struct proc* p = myproc();
   p->exec_count++;
   p->state = RUNNABLE;
-  p->dummy_wait = ticks;
+  p->ready_wait_flag = ticks;
   //cprintf("%s %d yielded\n", p->name, p->pid);
   //cprintf("PID: %d\t EC: %d\t PR: %d\t RT: %d\n", p->pid, p->exec_count, p->priority, p->yield_ticks-p->sched_ticks);
 

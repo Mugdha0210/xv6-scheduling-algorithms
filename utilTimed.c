@@ -8,26 +8,35 @@
 
 int main(int argc, char *argv[]) {
   int x;
-  //int fd;
   uint start, cputime, iotime, now;
-  //char *buffer = (char*)malloc(sizeof(char)*512);
+  uint priority;
 
-  if(argc != 3){
-    printf(1, "Usage: utilTimed <CPU burst time> <IO burst time>\n");
+  if(argc != 4){
+    printf(1, "Usage: utilTimed <CPU burst time> <IO burst time> <Priority>\n");
     exit();
   }
 
-  cputime = atoi(argv[1])*100;
-  iotime = atoi(argv[2])*100;
-  printf(1, "%d\n", cputime);
-  printf(1, "%d\n", iotime);
+  priority = atoi(argv[3]);
+
+  // from scheduler, TICR = 10000000 * (20 - priority)
+  // multiplier to find time in ticks = ((10000000 / TICR) * 100)
+  //                                  = 100 / (20 - priority)  
+
+  cputime = atoi(argv[1]) * (100 / (20 - priority));
+  iotime = atoi(argv[2]) * (100 / (20 - priority));
+
+  //cputime = atoi(argv[1]) * 100;
+  //iotime = atoi(argv[2]) * 100;
+
+  //printf(1, "%d\n", cputime);
+  //printf(1, "%d\n", iotime);
 
   start = uptime();
   while(1){
     now = uptime();
 
     if((now - start) >= cputime/2){
-      printf(1, "diff 1: %d\n", now-start);
+      //printf(1, "diff 1: %d\n", now-start);
       break;
     }
 
@@ -60,7 +69,7 @@ int main(int argc, char *argv[]) {
     now = uptime();
 
     if((now - start) >= cputime/2){
-      printf(1, "diff 3: %d\n", now-start);
+      //printf(1, "diff 3: %d\n", now-start);
       break;
     }
 
