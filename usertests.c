@@ -1785,7 +1785,7 @@ main(int argc, char *argv[])
   writetest1();
   createtest();
 
-  openiputtest();
+  //openiputtest();
   exitiputtest();
   iputtest();
 
