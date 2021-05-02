@@ -51,8 +51,8 @@ int main(int argc, char *argv[]){
         int duration = getStats(2);
         int proc_comp = getStats(4);
         int tt = getStats(3);
-        int dur_sec = getStats(5);
-        printf(1, "CPU UTILISATION: %d\% \nTHROUGHPUT (number of processes per second): %d/%d\nTURNAROUND: %d\n", (cpu_burst*100 / tt), proc_comp, dur_sec, duration);
+        // int dur_sec = getStats(5);
+        printf(1, "CPU UTILISATION: %d\% \nTHROUGHPUT (number of processes per second): %d/%d\nTURNAROUND: %d\n", (cpu_burst*100 / tt), proc_comp, duration, duration);
     halt();
     exit();
 }

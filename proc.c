@@ -530,11 +530,13 @@ static void
 wakeup1(void *chan)
 {
   struct proc *p;
-
+  int x;
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == SLEEPING && p->chan == chan){
       p->state = RUNNABLE;
-      p->wait_for_io += (get_time_in_sec() - p->dummy);
+      x = get_time_in_sec();
+      if(p->dummy < x)
+        p->wait_for_io += (x - p->dummy);
     }
 }
 
