@@ -50,11 +50,11 @@
 #include "fcntl.h"
 
 int main(int argc, char *argv[]){
-    char *args1[] = { "utilTimed", "10", "12", "5", 0 };
-    char *args2[] = { "utilTimed", "20", "15", "10", 0 };
-    char *args3[] = { "utilTimed", "10", "10", "3", 0 };
-    char *args4[] = { "utilTimed", "10", "5", "7", 0 };
-    char *args5[] = { "utilTimed", "20", "5", "15", 0 };
+    char *args1[] = { "utilTimed", "60", "12", "5", 0 };
+    char *args2[] = { "utilTimed", "100", "15", "10", 0 };
+    char *args3[] = { "utilTimed", "60", "10", "3", 0 };
+    char *args4[] = { "utilTimed", "60", "5", "7", 0 };
+    char *args5[] = { "utilTimed", "100", "5", "15", 0 };
     // int p,q;
     int i;
     // for(i=0;i<3;i++) // loop will run n times (n=5)
