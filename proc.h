@@ -83,7 +83,7 @@ struct proc {
 #define TIME_Q2 20000000
 #define TIME_Q3 30000000
 
-#define TICKS_LIMIT 5
+#define TICKS_LIMIT 30
 
 struct sched_stats{
     int nprocesses_scheduled;           //num of processes scheduled -- updated in scheduler
@@ -93,4 +93,7 @@ struct sched_stats{
     int turnaround[NPROC];              //update in exit
     int min_AT;                         //min arrival time, update in fork() if not the min
     int max_CT;                         //max completion time, update in exit() if not the max
+    int min_AT_sec;  
+    int max_CT_sec;  
+
 };

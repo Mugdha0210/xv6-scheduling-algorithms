@@ -237,3 +237,10 @@ void modify_TICR(int a)
 int get_current_TICR(void){
   return lapic[TICR];
 }
+
+uint get_time_in_sec(void){
+  struct rtcdate t1;
+  cmostime(&t1);
+  return t1.hour*3600 + t1.minute*60 + t1.second;
+}
+

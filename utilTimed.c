@@ -18,15 +18,15 @@ int main(int argc, char *argv[]) {
 
   cputime = atoi(argv[1])*100;
   iotime = atoi(argv[2])*100;
-  printf(1, "%d\n", cputime);
-  printf(1, "%d\n", iotime);
+  // printf(1, "%d\n", cputime);
+  // printf(1, "%d\n", iotime);
 
   start = uptime();
   while(1){
     now = uptime();
 
     if((now - start) >= cputime/2){
-      printf(1, "diff 1: %d\n", now-start);
+      // printf(1, "diff 1: %d\n", now-start);
       break;
     }
 
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
     now = uptime();
 
     if((now - start) >= cputime/2){
-      printf(1, "diff 3: %d\n", now-start);
+      // printf(1, "diff 3: %d\n", now-start);
       break;
     }
 
