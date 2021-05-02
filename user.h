@@ -1,5 +1,6 @@
 struct stat;
 struct rtcdate;
+struct sched_stats;
 
 // system calls
 int chpriority(int, int);

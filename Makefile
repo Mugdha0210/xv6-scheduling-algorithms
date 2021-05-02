@@ -176,6 +176,7 @@ UPROGS=\
 	_ln\
 	_ls\
 	_mkdir\
+        _pstat\
         _nice\
         _ps\
 	_rm\
@@ -183,6 +184,7 @@ UPROGS=\
 	_stressfs\
 	_usertests\
         _util\
+        _utilTimed\
 	_wc\
 	_zombie\
 

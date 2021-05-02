@@ -88,6 +88,7 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+  //return get_time_in_sec();
 }
 
 /*

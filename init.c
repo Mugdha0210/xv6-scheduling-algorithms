@@ -19,7 +19,11 @@ main(void)
   dup(0);  // stdout
   dup(0);  // stderr
 
+  int i = 0;
   for(;;){
+    if(i != 0){
+      continue;
+    }
     printf(1, "init: starting sh\n");
     pid = fork();
     if(pid < 0){
@@ -33,5 +37,6 @@ main(void)
     }
     while((wpid=wait()) >= 0 && wpid != pid)
       printf(1, "zombie!\n");
+    i++;
   }
 }

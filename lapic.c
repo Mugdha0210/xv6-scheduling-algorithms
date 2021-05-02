@@ -237,3 +237,10 @@ void modify_TICR(int ts)
   else
     lapicw(TICR, ts);
 }
+
+int get_time_in_sec(void)
+{
+  struct rtcdate t1;
+  cmostime(&t1);
+  return t1.hour*3600 + t1.minute*60 + t1.second;
+}

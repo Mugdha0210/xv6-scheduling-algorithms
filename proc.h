@@ -53,8 +53,14 @@ struct proc {
   int start_ticks; 	       // U: Time of first process scheduling
   int sched_ticks; 	       // U: Time of process scheduling
   int yield_ticks;             // U: Time of process yield
-  int exit_ticks;              // U: Time of process exit
+  int end_ticks;          
+  int cpu_burst;               // U: CPU burst time
+  int first; 
   int exec_count;              // U: No. of times process has been scheduled
+  int wait_for_io;
+  int dummy;
+  int dummy_wait;
+  int dummy_wait2;
 };
 
 // Process memory is laid out contiguously, low addresses first:
