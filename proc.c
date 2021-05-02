@@ -135,20 +135,15 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
   p->first = 1;
-  // if(i >= 0 && i <= 20){
-  //   p->queue_no = 1;
-  // }
-  // else if(i >= 21 && i <= 41){
-  //   p->queue_no = 2;
-  // }
-  // else if(i >= 42 && i <= 63){
-  //   p->queue_no = 3;
-  // }
   p->queue_no = 1;
-  p->sched_ticks = 0;
+
+  p->dummy = 0;
   p->end_ticks = 0;
   p->cpu_burst = 0;
   p->wait_for_io = 0;
+  p->dummy_wait = 0;
+  p->dummy_wait2 = 0;
+
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -287,7 +282,7 @@ fork(void)
   }
   else{
     np->queue_no = (pid % 3) + 1;
-    //np->queue_no = 3;
+    // np->queue_no = 1;
   }
   np->state = RUNNABLE;
   np->yield_count = 0;
@@ -327,17 +322,26 @@ exit(void)
     }
   }
   ss.nprocesses_completed += 1;
-  // curproc->end_ticks = get_time_in_sec();
+  
   curproc->end_ticks = ticks;
-  cprintf("PID %d -- %s -- end ticks : %d\n", curproc->pid, curproc->name, curproc->end_ticks);
-  cprintf("PID %d -- %s -- last sched ticks : %d\n", curproc->pid, curproc->name, curproc->sched_ticks);
-  cprintf("PID %d -- %s -- create ticks : %d\n", curproc->pid, curproc->name, curproc->create_ticks);
   ss.turnaround[curproc->pid - 1] = (curproc->end_ticks-curproc->create_ticks);
-  curproc->cpu_burst += (curproc->end_ticks - curproc->sched_ticks);
+  curproc->cpu_burst = ss.turnaround[curproc->pid - 1] - curproc->wait_for_io - curproc->dummy_wait2;
   ss.cpu_burst[curproc->pid - 1] = curproc -> cpu_burst;
   cprintf("PID %d -- %s -- turnaround : %d\n", curproc->pid, curproc->name, ss.turnaround[curproc->pid - 1]);
   cprintf("PID %d -- %s -- wait for io : %d\n", curproc->pid, curproc->name, curproc->wait_for_io);
-  cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, ss.cpu_burst[curproc->pid - 1]);
+  cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, curproc->cpu_burst);
+
+
+
+  // curproc->end_ticks = ticks;
+  // cprintf("PID %d -- %s -- end ticks : %d\n", curproc->pid, curproc->name, curproc->end_ticks);
+  // cprintf("PID %d -- %s -- ready ticks : %d\n", curproc->pid, curproc->name, curproc->ready);
+  // cprintf("PID %d -- %s -- create ticks : %d\n", curproc->pid, curproc->name, curproc->create_ticks);
+  // ss.turnaround[curproc->pid - 1] = (curproc->end_ticks-curproc->create_ticks);
+  // ss.cpu_burst[curproc->pid - 1] = ss.turnaround[curproc->pid - 1] - curproc->wait_for_io - curproc->ready;
+  // cprintf("PID %d -- %s -- turnaround : %d\n", curproc->pid, curproc->name, ss.turnaround[curproc->pid - 1]);
+  // cprintf("PID %d -- %s -- wait for io : %d\n", curproc->pid, curproc->name, curproc->wait_for_io);
+  // cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, ss.cpu_burst[curproc->pid - 1]);
 
   if(ss.max_CT < curproc->end_ticks)
     ss.max_CT = curproc->end_ticks;
@@ -471,6 +475,13 @@ scheduler(void)
       }
       p = highP;
       c->proc = p;
+      if(p->dummy_wait > p->sched_ticks){
+        p->dummy_wait2 = p->dummy_wait2 + ticks - p->dummy_wait;
+        // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\t ticks %d\n", p->pid, p->name, p->queue_no, ticks);
+        // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\t dummy_wait %d\n", p->pid, p->name, p->queue_no, p->dummy_wait);
+        // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\t dummy_wait2 %d\n", p->pid, p->name, p->queue_no, p->dummy_wait2);
+
+      }
       switchuvm(p);
       p->state = RUNNING;
       if(p->queue_no == 1)
@@ -484,9 +495,14 @@ scheduler(void)
       if(p->first == 1){
         p->first = 0;
         ss.nprocesses_scheduled += 1;
+        // p->dummy_wait2 = ticks - p->dummy_wait;
       }
-      // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\tmoving to switch at %d secs\n", p->pid, p->name, p->queue_no, p->sched_ticks);
       p->sched_ticks = ticks;
+
+      
+
+      // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\tmoving to switch at %d secs\n", p->pid, p->name, p->queue_no, p->sched_ticks);
+      // p->sched_ticks = ticks;
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -534,18 +550,11 @@ yield(void)
   acquire(&ptable.lock);  //DOC: yieldlock
   struct proc *p = myproc();
   p->state = RUNNABLE;
-  // cprintf("calling sched from yield\n");
   p->yield_count++;
-      // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\tbefore sched in yield %d secs\n", p->pid, p->name, p->queue_no, p->sched_ticks);
 
-  p->cpu_burst += (ticks - p->sched_ticks);
+  p->dummy_wait = ticks;
   sched();
-  // yieldcount++;
-  
-  // if(p->first == 1){
-  // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\trun ticks: %d\n", p->pid, p->name, p->queue_no, p->run_ticks);
-  // p->first = 0;
-  // }
+ 
   release(&ptable.lock);
 }
 
@@ -624,7 +633,7 @@ wakeup1(void *chan)
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == SLEEPING && p->chan == chan){
       p->state = RUNNABLE;
-      p->wait_for_io += ticks - p->dummy;
+      p->wait_for_io += (ticks - p->dummy);
     }  
 }
 

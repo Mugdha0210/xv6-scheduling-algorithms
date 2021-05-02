@@ -82,7 +82,7 @@ void            lapicinit(void);
 void            lapicstartap(uchar, uint);
 void            microdelay(int);
 void            modify_TICR(int);
-int             get_time_in_sec(void);
+uint            get_time_in_sec(void);
 
 // log.c
 void            initlog(int dev);

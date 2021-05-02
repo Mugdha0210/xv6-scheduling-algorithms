@@ -52,12 +52,15 @@ struct proc {
   char name[16];               // Process name (debugging)
   int queue_no;                //1, 2, 3
   int create_ticks;
-  int sched_ticks;
   int end_ticks;
-  int cpu_burst;
+  int sched_ticks;
+  int ready;
   int first;
   int yield_count;
   int wait_for_io;
+  int cpu_burst;
+  int dummy_wait;
+  int dummy_wait2;
   int dummy;
 };
 
