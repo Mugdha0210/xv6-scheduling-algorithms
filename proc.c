@@ -242,8 +242,10 @@ fork(void)
   np->first = 1;
   //np->start_ticks = get_time_in_sec();
   np->start_ticks = ticks;
-  if(np->pid == 3)
+  if(np->pid == 3){
     ss.min_AT = np->start_ticks;
+    ss.min_AT_sec = get_time_in_sec();
+  }
     
   //if(ss.min_AT > np->start_ticks)
    // ss.min_AT = np->start_ticks;
@@ -282,12 +284,14 @@ exit(void)
   ss.turnaround[curproc->pid - 1] = (curproc->end_ticks-curproc->start_ticks);
   curproc->cpu_burst = ss.turnaround[curproc->pid - 1] - curproc->wait_for_io - curproc->ready_wait_time;
   ss.cpu_burst[curproc->pid - 1] = curproc -> cpu_burst;
-  cprintf("PID %d -- %s -- turnaround : %d\n", curproc->pid, curproc->name, ss.turnaround[curproc->pid - 1]);
-  cprintf("PID %d -- %s -- wait for io : %d\n", curproc->pid, curproc->name, curproc->wait_for_io);
-  cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, curproc->cpu_burst);
+  // cprintf("PID %d -- %s -- turnaround : %d\n", curproc->pid, curproc->name, ss.turnaround[curproc->pid - 1]);
+  // cprintf("PID %d -- %s -- wait for io : %d\n", curproc->pid, curproc->name, curproc->wait_for_io);
+  // cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, curproc->cpu_burst);
   cprintf("PID %d -- %s -- EC: %d\t PR: %d\t RT: %d\n", curproc->pid, curproc->name, curproc->exec_count, curproc->priority, curproc->end_ticks-curproc->start_ticks);
-  if(ss.max_CT < curproc->end_ticks)
+  if(ss.max_CT < curproc->end_ticks){
     ss.max_CT = curproc->end_ticks;
+    ss.max_CT_sec = get_time_in_sec();
+  }
 
   begin_op();
   iput(curproc->cwd);
@@ -710,6 +714,7 @@ int getStats(int n){
         cpu_burst += ss.cpu_burst[i];
         // cprintf("i: %d\tcpu_burst: %d\n",i, ss.cpu_burst[i]);
     }
+    // cprintf("cpu_burst is %d\n", cpu_burst);
     return (cpu_burst);
   }
   else if(n == 2){
@@ -720,10 +725,14 @@ int getStats(int n){
       tt += ss.turnaround[i];
       // cprintf("i: %d\ttt: %d\n",i, ss.turnaround[i]);
     }
+    // cprintf("tt is %d\n", tt);
     return tt;
   }
   else if(n == 4){
     return ss.nprocesses_completed;
+  }
+  else if(n == 5){
+    return (ss.max_CT_sec - ss.min_AT_sec);
   }
   return -1;
 }
