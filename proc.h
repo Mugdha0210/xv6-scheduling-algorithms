@@ -87,6 +87,6 @@ struct sched_stats{
 };
 
 
-#define TIME_Q1 10000000
-#define TIME_Q2 5000000
-#define TIME_Q3 2500000
+#define TIME_Q1 30000000
+#define TIME_Q2 20000000
+#define TIME_Q3 10000000
