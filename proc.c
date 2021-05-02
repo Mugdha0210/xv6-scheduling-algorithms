@@ -184,7 +184,7 @@ userinit(void)
   // ss.min_AT = get_time_in_sec();
   // ss.min_AT = ticks;
   ss.max_CT = 0;
-
+  ss.max_CT_sec = 0;
   p = allocproc();
   
   initproc = p;
@@ -292,8 +292,13 @@ fork(void)
   // if(ss.min_AT > np->create_ticks)
   //   ss.min_AT = np->create_ticks;
   // cprintf("PID: %d\tNAME: %s\tQUEUE: %d\tstart ticks: %d\n", np->pid, np->name, np->queue_no, np->start_ticks);
-  if(np->pid == 3)
+  if(np->pid == 3){
     ss.min_AT = np->create_ticks;
+    ss.min_AT_sec = get_time_in_sec();
+  }
+
+  cprintf("PID %d -- %s -- QUEUE %d -- creation ticks : %d\n", curproc->pid, curproc->name, curproc->queue_no, curproc->create_ticks);
+  
   release(&ptable.lock);
 
   return pid;
@@ -327,11 +332,9 @@ exit(void)
   ss.turnaround[curproc->pid - 1] = (curproc->end_ticks-curproc->create_ticks);
   curproc->cpu_burst = ss.turnaround[curproc->pid - 1] - curproc->wait_for_io - curproc->dummy_wait2;
   ss.cpu_burst[curproc->pid - 1] = curproc -> cpu_burst;
-  cprintf("PID %d -- %s -- turnaround : %d\n", curproc->pid, curproc->name, ss.turnaround[curproc->pid - 1]);
-  cprintf("PID %d -- %s -- wait for io : %d\n", curproc->pid, curproc->name, curproc->wait_for_io);
-  cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, curproc->cpu_burst);
-
-
+  // cprintf("PID %d -- %s -- turnaround : %d\n", curproc->pid, curproc->name, ss.turnaround[curproc->pid - 1]);
+  // cprintf("PID %d -- %s -- wait for io : %d\n", curproc->pid, curproc->name, curproc->wait_for_io);
+  // cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, curproc->cpu_burst);
 
   // curproc->end_ticks = ticks;
   // cprintf("PID %d -- %s -- end ticks : %d\n", curproc->pid, curproc->name, curproc->end_ticks);
@@ -343,8 +346,10 @@ exit(void)
   // cprintf("PID %d -- %s -- wait for io : %d\n", curproc->pid, curproc->name, curproc->wait_for_io);
   // cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, ss.cpu_burst[curproc->pid - 1]);
 
-  if(ss.max_CT < curproc->end_ticks)
+  if(ss.max_CT < curproc->end_ticks){
     ss.max_CT = curproc->end_ticks;
+    ss.max_CT_sec = get_time_in_sec();
+  }
 
   begin_op();
   iput(curproc->cwd);
@@ -496,6 +501,7 @@ scheduler(void)
         p->first = 0;
         ss.nprocesses_scheduled += 1;
         // p->dummy_wait2 = ticks - p->dummy_wait;
+        cprintf("PID %d -- %s -- QUEUE %d -- first time scheduled: %d\n\n", p->pid, p->name, p->queue_no, ticks);
       }
       p->sched_ticks = ticks;
 
@@ -769,7 +775,7 @@ int getStats(int n){
         cpu_burst += ss.cpu_burst[i];
         // cprintf("i: %d\tcpu_burst: %d\n",i, ss.cpu_burst[i]);
     }
-    cprintf("cpu_burst is %d\n", cpu_burst);
+    // cprintf("cpu_burst is %d\n", cpu_burst);
     return (cpu_burst);
   }
   else if(n == 2){
@@ -780,11 +786,14 @@ int getStats(int n){
       tt += ss.turnaround[i];
       // cprintf("i: %d\ttt: %d\n",i, ss.turnaround[i]);
     }
-    cprintf("tt is %d\n", tt);
+    // cprintf("tt is %d\n", tt);
     return tt;
   }
   else if(n == 4){
     return ss.nprocesses_completed;
+  }
+  else if(n == 5){
+    return (ss.max_CT_sec - ss.min_AT_sec);
   }
   return -1;
 }

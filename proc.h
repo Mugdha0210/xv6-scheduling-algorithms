@@ -84,6 +84,8 @@ struct sched_stats{
     int turnaround[NPROC];              //update in exit
     int min_AT;                         //min arrival time, update in fork() if not the min
     int max_CT;                         //max completion time, update in exit() if not the max
+    int min_AT_sec;  
+    int max_CT_sec;                       
 };
 
 
