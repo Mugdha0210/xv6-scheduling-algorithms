@@ -92,9 +92,15 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->first = 1;
   p->sched_ticks = 0;
   p->end_ticks = 0;
   p->cpu_burst = 0;
+  p->wait_for_io = 0;
+  p->ready_wait_flag = 0;
+  p->ready_wait_time = 0;
+  p->dummy = 0;
+
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -131,9 +137,7 @@ userinit(void)
 
   ss.nprocesses_scheduled = 0;
   ss.nprocesses_completed = 0;
-  ss.cpu_burst[0] = 0;
-  ss.turnaround[0] = 0;
-  ss.min_AT = 10000000;
+  ss.min_AT = get_time_in_sec();
   ss.max_CT = 0;
 
   p = allocproc();
@@ -230,8 +234,11 @@ fork(void)
   np->state = RUNNABLE;
   np->first = 1;
   np->create_ticks = get_time_in_sec();
-  if(ss.min_AT > np->create_ticks)
+  if(np->pid == 3)
     ss.min_AT = np->create_ticks;
+
+  //if(ss.min_AT > np->create_ticks)
+   // ss.min_AT = np->create_ticks;
   //cprintf("PID %d -- %s -- came : %d\n", np->pid, np->name, get_time_in_sec());
   //int sec = get_time_in_sec();
   //cprintf("PID %d -- %s -- came(sec) : %d\n", np->pid, np->name, sec);
@@ -261,17 +268,21 @@ exit(void)
       curproc->ofile[fd] = 0;
     }
   }
+
+  ss.nprocesses_completed += 1;
   curproc->end_ticks = get_time_in_sec();
   ss.turnaround[curproc->pid - 1] = (curproc->end_ticks-curproc->create_ticks);
-  curproc->cpu_burst += (curproc->end_ticks - curproc->sched_ticks);
+  curproc->cpu_burst = ss.turnaround[curproc->pid - 1] - curproc->wait_for_io - curproc->ready_wait_time;
   ss.cpu_burst[curproc->pid - 1] = curproc -> cpu_burst;
+
   //cprintf("PID %d -- %s -- exited : %d\n", curproc->pid, curproc->name, curproc->end_ticks);
   //int sec = get_time_in_sec();
   //cprintf("PID %d -- %s -- exited(sec) : %d\n", curproc->pid, curproc->name, sec);
   cprintf("PID %d -- %s -- turnaround : %d\n", curproc->pid, curproc->name, ss.turnaround[curproc->pid - 1]);
+  cprintf("PID %d -- %s -- wait for io : %d\n", curproc->pid, curproc->name, curproc->wait_for_io);
   //cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, ss.cpu_burst[curproc->pid - 1]);
   cprintf("PID %d -- %s -- cpu burst : %d\n", curproc->pid, curproc->name, curproc->cpu_burst);
-  //cprintf("PID: %d\tNAME: %s\tLapsed ticks: %d\n", curproc->pid, curproc->name, (curproc->end_ticks - curproc->create_ticks));
+  cprintf("PID %d -- %s -- Lapsed ticks: %d\n", curproc->pid, curproc->name, (curproc->end_ticks - curproc->create_ticks));
   if(ss.max_CT < curproc->end_ticks)
     ss.max_CT = curproc->end_ticks;
   begin_op();
@@ -295,7 +306,7 @@ exit(void)
 
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
-  ss.nprocesses_completed += 1;
+  // ss.nprocesses_completed += 1;
   // int cpu_burst = getStats(1);
   // int duration = getStats(2);
   // int proc_comp = getStats(4);
@@ -378,13 +389,22 @@ scheduler(void)
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
       c->proc = p;
+  
+      if(p->ready_wait_flag > p->sched_ticks){
+        p->ready_wait_time = p->ready_wait_time + get_time_in_sec() - p->ready_wait_flag;
+      }
+
       switchuvm(p);
       p->state = RUNNING;
-      p->sched_ticks = get_time_in_sec();
+
       if(p->first == 1){
         p->first = 0;
         ss.nprocesses_scheduled += 1;
       }
+      p->sched_ticks = get_time_in_sec();
+
+      cprintf("**-- PID %d -- %s -- scheduled --**\n", p->pid, p->name);
+
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -428,7 +448,9 @@ void
 yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
-  myproc()->state = RUNNABLE;
+  struct proc* p = myproc();
+  p->state = RUNNABLE;
+  p->ready_wait_flag = get_time_in_sec();
   sched();
   release(&ptable.lock);
 }
@@ -484,8 +506,8 @@ sleep(void *chan, struct spinlock *lk)
   p->chan = chan;
   p->state = SLEEPING;
   //p->sleep_ticks = get_time_in_sec();
-  p->cpu_burst += (get_time_in_sec() - p->sched_ticks);
-  cprintf("HERE -- %d\n", p->chan);
+  //p->cpu_burst += (get_time_in_sec() - p->sched_ticks);
+  p->dummy = get_time_in_sec();
 
   sched();
 
@@ -508,8 +530,10 @@ wakeup1(void *chan)
   struct proc *p;
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    if(p->state == SLEEPING && p->chan == chan)
+    if(p->state == SLEEPING && p->chan == chan){
       p->state = RUNNABLE;
+      p->wait_for_io += (get_time_in_sec() - p->dummy);
+    }
 }
 
 // Wake up all processes sleeping on chan.

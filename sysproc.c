@@ -65,8 +65,10 @@ sys_sleep(void)
   if(argint(0, &n) < 0)
     return -1;
   acquire(&tickslock);
-  ticks0 = ticks;
-  while(ticks - ticks0 < n){
+  //ticks0 = ticks;
+  ticks0 = get_time_in_sec();
+  //while(ticks - ticks0 < n){
+  while(get_time_in_sec() - ticks0 < n){
     if(myproc()->killed){
       release(&tickslock);
       return -1;

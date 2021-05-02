@@ -54,6 +54,10 @@ struct proc {
   uint end_ticks;              // Process exit time
   uint cpu_burst;              // CPU burst time
   int first;
+  int wait_for_io;
+  int dummy;
+  int ready_wait_flag;
+  int ready_wait_time;
 };
 
 // Process memory is laid out contiguously, low addresses first:
