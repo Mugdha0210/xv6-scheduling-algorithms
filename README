@@ -1,18 +1,6 @@
-# XV6 Schduling Algorithms
+XV6 Schduling Algorithms
 
----
-
-### 📝 Table of Contents
-
-- [Description](#-description)
-- [How To Use](#how-to-use)
-- [Acknowledgements](#-acknowledgements)
-- [Authors](#-author-info)
-
----
-
-
-## 🔠 Description
+🔠 Description
 
 A computer process time consists of both I/O time and CPU time. To maximise the efficiency of the system, different scheduling algorithms can be implemented to schedule processes on the CPU.
 
@@ -26,38 +14,27 @@ The time quantum was calculated using timer-interrupt and corresponding ticks. C
 
 Parameters such as turnaround time, throughput, waiting time were calculated.
 
----
 
-#### 💻 Languages
+💻 Languages
 
 - C 
 - Assembly language
 
-<!-- [Back To The Top](#read-me-template) -->
 
----
-
-## How To Use
-
-#### 🔧 Installation
+🔧 How To Use
 
 - Clone the repo
-- ```bash
-make clean
-make qemu
-```
+- make clean
+- make qemu
 
-<!-- [Back To The Top](#read-me-template) -->
 
-## 🖋️ Authors <a name = "authors"></a>
+🖋️ Authors
 
 - [@Mugdha0210](https://github.com/Mugdha0210)
 - [@Urvi2904](https://github.com/Urvi2904)
 
-<!-- [Back To The Top](#read-me-template) -->
 
-
-## Acknowledgements <a name = "authors"></a>
+Acknowledgements 
 - xv6 repository- https://github.com/mit-pdos/xv6-public
 
 ---
