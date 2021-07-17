@@ -1,3 +1,67 @@
+# XV6 Schduling Algorithms
+
+---
+
+### 📝 Table of Contents
+
+- [Description](#-description)
+- [How To Use](#how-to-use)
+- [Acknowledgements](#-acknowledgements)
+- [Authors](#-author-info)
+
+---
+
+
+## 🔠 Description
+
+A computer process time consists of both I/O time and CPU time. To maximise the efficiency of the system, different scheduling algorithms can be implemented to schedule processes on the CPU.
+
+This project implements 4 CPU-scheduling algoritms in xv6 operating system -
+1. First Come First Serve: Schedules according to arrival times of processes. Timer interrupt was disabled.
+2. Priority Scheduling (Preemptive): Highest priority process is given greater time quantum. If priorities of two processes match, then schedule according to arrival time. 
+3. Multilevel Queue (Preemptive): Processes are placed in different queues. Only after completion of processes from top level queue, lower level queued processes are scheduled. Lower queue processes can suffer from starvation.
+4. Multilevel Feedback Queue (Preemptive): If a process uses too much CPU time, it is moved to a lower-priority queue.
+
+The time quantum was calculated using timer-interrupt and corresponding ticks. Calculation of ticks-count was adjusted according to timer interrupt duration to achieve uniformity.
+
+Parameters such as turnaround time, throughput, waiting time were calculated.
+
+---
+
+#### 💻 Languages
+
+- C 
+- Assembly language
+
+<!-- [Back To The Top](#read-me-template) -->
+
+---
+
+## How To Use
+
+#### 🔧 Installation
+
+- Clone the repo
+- ```bash
+make clean
+make qemu
+```
+
+<!-- [Back To The Top](#read-me-template) -->
+
+## 🖋️ Authors <a name = "authors"></a>
+
+- [@Mugdha0210](https://github.com/Mugdha0210)
+- [@Urvi2904](https://github.com/Urvi2904)
+
+<!-- [Back To The Top](#read-me-template) -->
+
+
+## Acknowledgements <a name = "authors"></a>
+- xv6 repository- https://github.com/mit-pdos/xv6-public
+
+---
+
 NOTE: we have stopped maintaining the x86 version of xv6, and switched
 our efforts to the RISC-V version
 (https://github.com/mit-pdos/xv6-riscv.git)
